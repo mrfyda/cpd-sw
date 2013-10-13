@@ -28,9 +28,45 @@ int squirrelBreedingPeriod;
 int wolfStarvationPeriod;
 int numberOfGenerations;
 
+void readFile(char* path);
+
 int main(int argc, char *argv[]) {
 
-  printf("http://vimeo.com/64611906\n");
+    if (argc != 6)
+        printf("Unexpected number of input: %d\n", argc);
 
-  return 0;
+    printf("Reading from file: %s\n", argv[1]);
+    readFile(argv[1]);
+
+    wolfBreedingPeriod = atoi(argv[2]);
+    printf("Wolf breeding period: %d\n", wolfBreedingPeriod);
+
+    squirrelBreedingPeriod = atoi(argv[3]);
+    printf("Squirrel breeding period: %d\n", squirrelBreedingPeriod);
+
+    wolfStarvationPeriod = atoi(argv[4]);
+    printf("Wolf starvation period: %d\n", wolfStarvationPeriod);
+
+    numberOfGenerations = atoi(argv[5]);
+    printf("Number of generations: %d\n", numberOfGenerations);
+
+
+    printf("http://vimeo.com/64611906\n");
+
+    return 0;
+}
+
+void readFile(char* path) {
+    char line[80];
+    FILE *fr = fopen (path, "rt");
+
+    while (fgets(line, 80, fr) != NULL) {
+        int x, y;
+        char symbol;
+
+        sscanf(line, "%d %d %c", &x, &y, &symbol);
+	    printf("Read from file: %d %d %c\n", x, y, symbol);
+    }
+
+    fclose(fr);
 }

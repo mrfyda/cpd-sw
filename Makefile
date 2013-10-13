@@ -8,7 +8,7 @@ C_FILES = $(wildcard *.c)
 OBJ_FILES = $(patsubst %.c,obj/%.o,$(C_FILES))
 
 IN      = $(C_FILES)
-OUT     = -o wolves-squirrels-serial
+OUT     = -o bin/wolves-squirrels-serial
 
 all: clean $(shell uname -o) clean run
 
@@ -19,7 +19,7 @@ Cygwin:
 	@$(CC) $(FLAGS) $(IN) $(OUT).exe $< $(CYGLIBS)
 
 clean:
-	@rm -rf src/*.a src/*.o wolves-squirrels-serial
+	@rm -rf *.a *.o wolves-squirrels-serial
 
 run:
-	./wolves-squirrels-serial
+	./bin/wolves-squirrels-serial tests/sample.in 5 4 2 10
