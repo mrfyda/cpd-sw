@@ -19,6 +19,7 @@ Cygwin:
 	@$(CC) $(FLAGS) $(IN) $(OUT).exe $< $(CYGLIBS)
 
 clean:
+	@mkdir -p bin
 	@rm -rf *.a *.o wolves-squirrels-serial
 
 run:

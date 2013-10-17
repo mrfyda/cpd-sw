@@ -11,32 +11,33 @@ wolves-squirrels-serial.c
 #define DOWN 2
 #define LEFT 3
 
-#define WOLF 100
-#define SQUIRREL 101
+#define EMPTY 100
+#define WOLF 101
+#define SQUIRREL 102
+#define TREE 103
+#define ICE 104
+#define SQUIRRELONTREE 105
 
-#define MAX 1000
-
-struct world {
+typedef struct {
   int type;
   int breeding_period;
   int starvation_period;
-} world[MAX][MAX];
+} world;
 
-int gridSize;
-int wolfBreedingPeriod;
-int squirrelBreedingPeriod;
-int wolfStarvationPeriod;
-int numberOfGenerations;
-
-void readFile(char* path);
+void readFile(char* path, world ***board);
 
 int main(int argc, char *argv[]) {
+    int wolfBreedingPeriod;
+    int squirrelBreedingPeriod;
+    int wolfStarvationPeriod;
+    int numberOfGenerations;
+    world **board;
 
     if (argc != 6)
         printf("Unexpected number of input: %d\n", argc);
 
     printf("Reading from file: %s\n", argv[1]);
-    readFile(argv[1]);
+    readFile(argv[1], &board);
 
     wolfBreedingPeriod = atoi(argv[2]);
     printf("Wolf breeding period: %d\n", wolfBreedingPeriod);
@@ -56,17 +57,29 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-void readFile(char* path) {
+void readFile(char* path, world ***board) {
     char line[80];
     FILE *fr = fopen (path, "rt");
 
-    while (fgets(line, 80, fr) != NULL) {
-        int x, y;
-        char symbol;
+    if(fgets(line, 80, fr) != NULL) {
+        int i, gridSize;
+        sscanf(line, "%d", &gridSize);
+        printf("Grid size: %d\n", gridSize);
+        
+        board = (world*) malloc(gridSize * sizeof(world*));
+        for(i = 0; i < gridSize; i++) {
+            board[i] = (world*) malloc(gridSize * sizeof(world));
+        }
+        
+        while (fgets(line, 80, fr) != NULL) {
+            int x, y;
+            char symbol;
 
-        sscanf(line, "%d %d %c", &x, &y, &symbol);
-	    printf("Read from file: %d %d %c\n", x, y, symbol);
+            sscanf(line, "%d %d %c", &x, &y, &symbol);
+	        printf("Read from file: %d %d %c\n", x, y, symbol);
+        }
     }
 
     fclose(fr);
 }
+
