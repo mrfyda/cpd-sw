@@ -212,17 +212,12 @@ void moveSquirrel(world *currentPosition, world *newPosition) {
         newPosition->starvation_period = currentPosition->starvation_period + 1;
         newPosition->breeding_period = currentPosition->breeding_period - 1;
     }
+
+    updateCurrentPosition(currentPosition);
 }
 
-void processSquirrel(world ***board, int worldSize, position pos) {
-    debug("Processing Squirrel @[%d, %d]...\n", pos.x, pos.y);
-    int possibleMoves;
-    world **movePossibilities;
-    world *currentPos, *newPosition;
-
-    possibleMoves = 0;
-    movePossibilities = (world **) malloc(MOVES * sizeof(world *));
-    currentPos = &(*board)[pos.x][pos.y];
+int calculateSquirrelMoves(world ***board, int worldSize, position pos, world **movePossibilities) {
+    int possibleMoves = 0;
 
     /* UP */
     if (pos.x - 1 > -1 && canMove(SQUIRREL, &(*board)[pos.x - 1][pos.y])) {
@@ -244,6 +239,20 @@ void processSquirrel(world ***board, int worldSize, position pos) {
         movePossibilities[possibleMoves++] = &(*board)[pos.x][pos.y - 1];
     }
 
+    return possibleMoves;
+}
+
+void processSquirrel(world ***board, int worldSize, position pos) {
+    debug("Processing Squirrel @[%d, %d]...\n", pos.x, pos.y);
+    int possibleMoves;
+    world **movePossibilities;
+    world *currentPos, *newPosition;
+
+    movePossibilities = (world **) malloc(MOVES * sizeof(world *));
+    currentPos = &(*board)[pos.x][pos.y];
+
+    possibleMoves = calculateSquirrelMoves(board, worldSize, pos, movePossibilities);
+
     if (possibleMoves > 1) {
         int c = pos.x * worldSize + pos.y;
         newPosition = movePossibilities[c % possibleMoves];
@@ -253,7 +262,6 @@ void processSquirrel(world ***board, int worldSize, position pos) {
         return;
     }
 
-    updateCurrentPosition(currentPos);
     moveSquirrel(currentPos, newPosition);
 
     free(movePossibilities);
