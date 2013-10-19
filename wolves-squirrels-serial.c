@@ -255,6 +255,8 @@ void processSquirrel(world ***board, int worldSize, position pos) {
 
     updateCurrentPosition(currentPos);
     moveSquirrel(currentPos, newPosition);
+
+    free(movePossibilities);
 }
 
 void processWolf(world ***board) {
