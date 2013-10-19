@@ -43,6 +43,7 @@ int main(int argc, char *argv[]) {
     int numberOfGenerations;
     int worldSize;
     world **board = NULL;
+    int i, j;
 
     if (argc != 6)
         debug("Unexpected number of input: %d\n", argc);
@@ -62,6 +63,17 @@ int main(int argc, char *argv[]) {
     numberOfGenerations = atoi(argv[5]);
     debug("Number of generations: %d\n", numberOfGenerations);
 
+    for (i = 0; i < worldSize; i++) {
+        for (j = i % 2; j < worldSize; j += 2) {
+            debug("%d %d\n", i, j);
+        }
+    }
+    for (i = 0; i < worldSize; i++) {
+        for (j = 1 - (i % 2); j < worldSize; j += 2) {
+            debug("%d %d\n", i, j);
+        }
+    }
+
     printBoard(board, worldSize);
 
     return 0;
@@ -74,7 +86,7 @@ void readFile(char *path, world ***board, int *worldSize) {
     if (fgets(line, 80, fr) != NULL) {
         int i, j;
         sscanf(line, "%d", worldSize);
-        debug("Grid size: %d\n", *worldSize);
+        debug("World size: %d\n", *worldSize);
 
         *board = (world **) malloc(*worldSize * sizeof(world *));
         for (i = 0; i < *worldSize; i++) {
