@@ -14,12 +14,12 @@ wolves-squirrels-serial.c
 #define DOWN 2
 #define LEFT 3
 
-#define EMPTY 100
-#define WOLF 101
-#define SQUIRREL 102
-#define TREE 103
-#define ICE 104
-#define SQUIRRELONTREE 105
+#define EMPTY '.'
+#define WOLF 'w'
+#define SQUIRREL 's'
+#define TREE 't'
+#define ICE 'i'
+#define SQUIRRELONTREE '$'
 
 typedef struct {
     int type;
@@ -31,6 +31,10 @@ typedef struct {
 void readFile(char *path, world ***board, int *worldSize);
 void printBoard(world **board, int worldSize);
 void debug(const char *format, ...);
+void processSquirrel(world ***board);
+void processWolf(world ***board);
+void processConflicts(world ***board);
+
 
 int main(int argc, char *argv[]) {
     int wolfBreedingPeriod;
@@ -88,7 +92,7 @@ void readFile(char *path, world ***board, int *worldSize) {
             sscanf(line, "%d %d %c", &x, &y, &symbol);
             debug("Read from file: %d %d %c\n", x, y, symbol);
 
-            (*board)[x][y].type = TREE;
+            (*board)[x][y].type = symbol;
         }
     }
 
@@ -100,7 +104,7 @@ void printBoard(world **board, int worldSize) {
 
     for (i = 0; i < worldSize; i++) {
         for (j = 0; j < worldSize; j++) {
-            debug("%d ", board[i][j].type);
+            debug("%c ", board[i][j].type);
         }
         debug("\n");
     }
