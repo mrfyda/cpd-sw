@@ -38,6 +38,7 @@ void debug(const char *format, ...);
 void processSquirrel(world ***board, int worldSize, position pos);
 void processWolf(world ***board);
 void processConflicts(world ***board);
+void processCell(world ***board, int worldSize, position pos);
 
 
 int main(int argc, char *argv[]) {
@@ -47,7 +48,8 @@ int main(int argc, char *argv[]) {
     int numberOfGenerations;
     int worldSize;
     world **board = NULL;
-    int i, j;
+    int g;
+    position currentPos;
 
     if (argc != 6)
         debug("Unexpected number of input: %d\n", argc);
@@ -67,18 +69,25 @@ int main(int argc, char *argv[]) {
     numberOfGenerations = atoi(argv[5]);
     debug("Number of generations: %d\n", numberOfGenerations);
 
-    for (i = 0; i < worldSize; i++) {
-        for (j = i % 2; j < worldSize; j += 2) {
-            debug("%d %d\n", i, j);
+    for (g = 0; g < numberOfGenerations; g++) {
+        for (currentPos.x = 0; currentPos.x < worldSize; currentPos.x++) {
+            for (currentPos.y = currentPos.x % 2; currentPos.y < worldSize; currentPos.y += 2) {
+                processCell(&board, worldSize, currentPos);
+            }
         }
-    }
-    for (i = 0; i < worldSize; i++) {
-        for (j = 1 - (i % 2); j < worldSize; j += 2) {
-            debug("%d %d\n", i, j);
+        for (currentPos.x = 0; currentPos.x < worldSize; currentPos.x++) {
+            for (currentPos.y = 1 - (currentPos.y % 2); currentPos.y < worldSize; currentPos.y += 2) {
+                processCell(&board, worldSize, currentPos);
+            }
         }
     }
 
     printBoard(board, worldSize);
+
+    for (currentPos.x = 0; currentPos.x < worldSize; currentPos.x++) {
+        free(board[currentPos.x]);
+    }
+    free(board);
 
     return 0;
 }
@@ -110,13 +119,17 @@ void readFile(char *path, world ***board, int *worldSize, int sbp, int wbp, int 
 
             (*board)[x][y].type = symbol;
 
-            if (symbol == WOLF) {
-                (*board)[x][y].breeding_period = wbp;
-                (*board)[x][y].starvation_period = wsp;
-            } else if (symbol == SQUIRREL) {
+            switch (symbol) {
+            case SQUIRRELONTREE:
+            case SQUIRREL:
                 (*board)[x][y].breeding_period = sbp;
                 (*board)[x][y].starvation_period = 0;
-            } else {
+                break;
+            case WOLF:
+                (*board)[x][y].breeding_period = wbp;
+                (*board)[x][y].starvation_period = wsp;
+                break;
+            default :
                 (*board)[x][y].breeding_period = 0;
                 (*board)[x][y].starvation_period = 0;
             }
@@ -149,6 +162,22 @@ void debug(const char *format, ...) {
     }
 }
 
+void processCell(world ***board, int worldSize, position pos) {
+    switch ((*board)[pos.x][pos.y].type) {
+    case SQUIRRELONTREE:
+    case SQUIRREL:
+        processSquirrel(board, worldSize, pos);
+        break;
+    case WOLF:
+        processWolf(board);
+        break;
+    }
+}
+
 void processSquirrel(world ***board, int worldSize, position pos) {
     /* TODO: Do stuff :) */
+}
+
+void processWolf(world ***board) {
+    /* TODO: Do stuff */
 }
