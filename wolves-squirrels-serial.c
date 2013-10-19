@@ -182,8 +182,9 @@ void processConflicts(world *currentPosition, world *newPosition) {
     /* PROCESS CONFLICTS */
 }
 
-int canSquirrelMove(world *pos) {
-    if (pos->type != WOLF && pos->type != ICE) return 1;
+int canMove(int type, world *pos) {
+    if (type == SQUIRREL && pos->type != WOLF && pos->type != ICE) return 1;
+    else if (type == WOLF && pos->type != TREE && pos->type != ICE) return 1;
     else return 0;
 }
 
@@ -224,22 +225,22 @@ void processSquirrel(world ***board, int worldSize, position pos) {
     currentPos = &(*board)[pos.x][pos.y];
 
     /* UP */
-    if (pos.x - 1 > -1 && canSquirrelMove(&(*board)[pos.x - 1][pos.y])) {
+    if (pos.x - 1 > -1 && canMove(SQUIRREL, &(*board)[pos.x - 1][pos.y])) {
         movePossibilities[possibleMoves++] = &(*board)[pos.x - 1][pos.y];
     }
 
     /* RIGHT */
-    if (pos.y + 1 < worldSize && canSquirrelMove(&(*board)[pos.x][pos.y + 1])) {
+    if (pos.y + 1 < worldSize && canMove(SQUIRREL, &(*board)[pos.x][pos.y + 1])) {
         movePossibilities[possibleMoves++] = &(*board)[pos.x][pos.y + 1];
     }
 
     /* DOWN */
-    if (pos.x + 1 < worldSize && canSquirrelMove(&(*board)[pos.x + 1][pos.y])) {
+    if (pos.x + 1 < worldSize && canMove(SQUIRREL, &(*board)[pos.x + 1][pos.y])) {
         movePossibilities[possibleMoves++] = &(*board)[pos.x + 1][pos.y];
     }
 
     /* LEFT */
-    if (pos.y - 1 > -1 && canSquirrelMove(&(*board)[pos.x][pos.y - 1])) {
+    if (pos.y - 1 > -1 && canMove(SQUIRREL, &(*board)[pos.x][pos.y - 1])) {
         movePossibilities[possibleMoves++] = &(*board)[pos.x][pos.y - 1];
     }
 
