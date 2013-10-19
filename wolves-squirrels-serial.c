@@ -27,11 +27,15 @@ typedef struct {
     int starvation_period;
 } world;
 
+typedef struct {
+    int x;
+    int y;
+} position;
 
 void readFile(char *path, world ***board, int *worldSize);
 void printBoard(world **board, int worldSize);
 void debug(const char *format, ...);
-void processSquirrel(world ***board);
+void processSquirrel(world ***board, int worldSize, position pos);
 void processWolf(world ***board);
 void processConflicts(world ***board);
 
@@ -132,4 +136,8 @@ void debug(const char *format, ...) {
 
         fflush(stdout);
     }
+}
+
+void processSquirrel(world ***board, int worldSize, position pos) {
+    /* TODO: Do stuff :) */
 }
