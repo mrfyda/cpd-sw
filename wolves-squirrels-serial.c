@@ -21,6 +21,8 @@ wolves-squirrels-serial.c
 #define ICE 'i'
 #define SQUIRRELONTREE '$'
 
+#define MOVES 4
+
 typedef struct {
     int type;
     int breeding_period;
@@ -37,7 +39,7 @@ void printBoard(world **board, int worldSize);
 void debug(const char *format, ...);
 void processSquirrel(world ***board, int worldSize, position pos);
 void processWolf(world ***board);
-void processConflicts(world ***board);
+void processConflicts(world *currentPosition, world *newPosition);
 void processCell(world ***board, int worldSize, position pos);
 
 
@@ -68,6 +70,8 @@ int main(int argc, char *argv[]) {
 
     numberOfGenerations = atoi(argv[5]);
     debug("Number of generations: %d\n", numberOfGenerations);
+
+    printBoard(board, worldSize);
 
     for (g = 0; g < numberOfGenerations; g++) {
         for (currentPos.x = 0; currentPos.x < worldSize; currentPos.x++) {
@@ -174,8 +178,82 @@ void processCell(world ***board, int worldSize, position pos) {
     }
 }
 
+void processConflicts(world *currentPosition, world *newPosition) {
+    /* PROCESS CONFLICTS */
+}
+
+int canSquirrelMove(world *pos) {
+    if (pos->type != WOLF && pos->type != ICE) return 1;
+    else return 0;
+}
+
+void updateCurrentPosition(world *currentPosition) {
+    if (currentPosition->type == SQUIRRELONTREE) {
+        currentPosition->type = TREE;
+    } else {
+        currentPosition->type = EMPTY;
+    }
+
+    /* This is not needed, maibe we can remove it? */
+    currentPosition->breeding_period = 0;
+    currentPosition->starvation_period = 0;
+}
+
+void moveSquirrel(world *currentPosition, world *newPosition) {
+    if (newPosition->type == SQUIRREL || newPosition->type == SQUIRRELONTREE) {
+        processConflicts(currentPosition, newPosition);
+    } else if (newPosition->type == TREE) {
+        newPosition->type = SQUIRRELONTREE;
+        newPosition->starvation_period = currentPosition->starvation_period + 1;
+        newPosition->breeding_period = currentPosition->breeding_period - 1;
+    } else {
+        newPosition->type = SQUIRREL;
+        newPosition->starvation_period = currentPosition->starvation_period + 1;
+        newPosition->breeding_period = currentPosition->breeding_period - 1;
+    }
+}
+
 void processSquirrel(world ***board, int worldSize, position pos) {
-    /* TODO: Do stuff :) */
+    debug("Processing Squirrel @[%d, %d]...\n", pos.x, pos.y);
+    int possibleMoves;
+    world **movePossibilities;
+    world *currentPos, *newPosition;
+
+    possibleMoves = 0;
+    movePossibilities = (world **) malloc(MOVES * sizeof(world *));
+    currentPos = &(*board)[pos.x][pos.y];
+
+    /* UP */
+    if (pos.x - 1 > -1 && canSquirrelMove(&(*board)[pos.x - 1][pos.y])) {
+        movePossibilities[possibleMoves++] = &(*board)[pos.x - 1][pos.y];
+    }
+
+    /* RIGHT */
+    if (pos.y + 1 < worldSize && canSquirrelMove(&(*board)[pos.x][pos.y + 1])) {
+        movePossibilities[possibleMoves++] = &(*board)[pos.x][pos.y + 1];
+    }
+
+    /* DOWN */
+    if (pos.x + 1 < worldSize && canSquirrelMove(&(*board)[pos.x + 1][pos.y])) {
+        movePossibilities[possibleMoves++] = &(*board)[pos.x + 1][pos.y];
+    }
+
+    /* LEFT */
+    if (pos.y - 1 > -1 && canSquirrelMove(&(*board)[pos.x][pos.y - 1])) {
+        movePossibilities[possibleMoves++] = &(*board)[pos.x][pos.y - 1];
+    }
+
+    if (possibleMoves > 1) {
+        int c = pos.x * worldSize + pos.y;
+        newPosition = movePossibilities[c % possibleMoves];
+    } else if (possibleMoves == 1) {
+        newPosition = movePossibilities[possibleMoves];
+    } else {
+        return;
+    }
+
+    updateCurrentPosition(currentPos);
+    moveSquirrel(currentPos, newPosition);
 }
 
 void processWolf(world ***board) {
