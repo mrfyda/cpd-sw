@@ -28,8 +28,8 @@ typedef struct {
 } world;
 
 
-void readFile(char *path, world **board, int *worldSize);
-void printBoard(world **board);
+void readFile(char *path, world ***board, int *worldSize);
+void printBoard(world **board, int worldSize);
 void debug(const char *format, ...);
 
 int main(int argc, char *argv[]) {
@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
         debug("Unexpected number of input: %d\n", argc);
 
     debug("Reading from file: %s\n", argv[1]);
-    readFile(argv[1], board, &worldSize);
+    readFile(argv[1], &board, &worldSize);
 
     wolfBreedingPeriod = atoi(argv[2]);
     debug("Wolf breeding period: %d\n", wolfBreedingPeriod);
@@ -58,12 +58,12 @@ int main(int argc, char *argv[]) {
     numberOfGenerations = atoi(argv[5]);
     debug("Number of generations: %d\n", numberOfGenerations);
 
-    printBoard(board);
+    printBoard(board, worldSize);
 
     return 0;
 }
 
-void readFile(char *path, world **board, int *worldSize) {
+void readFile(char *path, world ***board, int *worldSize) {
     char line[80];
     FILE *fr = fopen (path, "rt");
 
@@ -72,12 +72,12 @@ void readFile(char *path, world **board, int *worldSize) {
         sscanf(line, "%d", worldSize);
         debug("Grid size: %d\n", *worldSize);
 
-        board = (world **) malloc(*worldSize * sizeof(world *));
+        *board = (world **) malloc(*worldSize * sizeof(world *));
         for (i = 0; i < *worldSize; i++) {
-            board[i] = (world *) malloc(*worldSize * sizeof(world));
+            (*board)[i] = (world *) malloc(*worldSize * sizeof(world));
 
             for (j = 0; j < *worldSize; j++) {
-                board[i][j].type = EMPTY;
+                (*board)[i][j].type = EMPTY;
             }
         }
 
@@ -88,21 +88,19 @@ void readFile(char *path, world **board, int *worldSize) {
             sscanf(line, "%d %d %c", &x, &y, &symbol);
             debug("Read from file: %d %d %c\n", x, y, symbol);
 
-            board[x][y].type = TREE;
+            (*board)[x][y].type = TREE;
         }
     }
-
-    printBoard(board);
 
     fclose(fr);
 }
 
-void printBoard(world **board) {
+void printBoard(world **board, int worldSize) {
     int i, j;
 
-    for (i = 0; i < 10; i++) {
-        for (j = 0; j < 10; j++) {
-            debug("%3d ", board[i][j].type);
+    for (i = 0; i < worldSize; i++) {
+        for (j = 0; j < worldSize; j++) {
+            debug("%d ", board[i][j].type);
         }
         debug("\n");
     }
