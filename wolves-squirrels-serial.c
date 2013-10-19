@@ -32,7 +32,7 @@ typedef struct {
     int y;
 } position;
 
-void readFile(char *path, world ***board, int *worldSize);
+void readFile(char *path, world ***board, int *worldSize, int sbp, int wbp, int wsp);
 void printBoard(world **board, int worldSize);
 void debug(const char *format, ...);
 void processSquirrel(world ***board, int worldSize, position pos);
@@ -52,9 +52,6 @@ int main(int argc, char *argv[]) {
     if (argc != 6)
         debug("Unexpected number of input: %d\n", argc);
 
-    debug("Reading from file: %s\n", argv[1]);
-    readFile(argv[1], &board, &worldSize);
-
     wolfBreedingPeriod = atoi(argv[2]);
     debug("Wolf breeding period: %d\n", wolfBreedingPeriod);
 
@@ -63,6 +60,9 @@ int main(int argc, char *argv[]) {
 
     wolfStarvationPeriod = atoi(argv[4]);
     debug("Wolf starvation period: %d\n", wolfStarvationPeriod);
+
+    debug("Reading from file: %s\n", argv[1]);
+    readFile(argv[1], &board, &worldSize, squirrelBreedingPeriod, wolfBreedingPeriod, wolfStarvationPeriod);
 
     numberOfGenerations = atoi(argv[5]);
     debug("Number of generations: %d\n", numberOfGenerations);
@@ -83,7 +83,7 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-void readFile(char *path, world ***board, int *worldSize) {
+void readFile(char *path, world ***board, int *worldSize, int sbp, int wbp, int wsp) {
     char line[80];
     FILE *fr = fopen (path, "rt");
 
@@ -109,6 +109,17 @@ void readFile(char *path, world ***board, int *worldSize) {
             debug("Read from file: %d %d %c\n", x, y, symbol);
 
             (*board)[x][y].type = symbol;
+
+            if (symbol == WOLF) {
+                (*board)[x][y].breeding_period = wbp;
+                (*board)[x][y].starvation_period = wsp;
+            } else if (symbol == SQUIRREL) {
+                (*board)[x][y].breeding_period = sbp;
+                (*board)[x][y].starvation_period = 0;
+            } else {
+                (*board)[x][y].breeding_period = 0;
+                (*board)[x][y].starvation_period = 0;
+            }
         }
     }
 
