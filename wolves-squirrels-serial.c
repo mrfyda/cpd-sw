@@ -39,7 +39,7 @@ void printBoard(world **board, int worldSize);
 void debug(const char *format, ...);
 void processSquirrel(world ***board, int worldSize, position pos);
 void processWolf(world ***board);
-void processConflicts(world *currentPosition, world *newPosition);
+void processConflicts(world *currentCell, world *newCell);
 void processCell(world ***board, int worldSize, position pos);
 
 
@@ -170,50 +170,52 @@ void processCell(world ***board, int worldSize, position pos) {
     switch ((*board)[pos.x][pos.y].type) {
     case SQUIRRELONTREE:
     case SQUIRREL:
+        debug("Processing Squirrel @[%d, %d]...\n", pos.x, pos.y);
         processSquirrel(board, worldSize, pos);
         break;
     case WOLF:
+        debug("Processing Wolf @[%d, %d]...\n", pos.x, pos.y);
         processWolf(board);
         break;
     }
 }
 
-void processConflicts(world *currentPosition, world *newPosition) {
+void processConflicts(world *currentCell, world *newCell) {
     /* PROCESS CONFLICTS */
 }
 
-int canMove(int type, world *pos) {
-    if (type == SQUIRREL && pos->type != WOLF && pos->type != ICE) return 1;
-    else if (type == WOLF && pos->type != TREE && pos->type != ICE) return 1;
+int canMove(int type, world *cell) {
+    if (type == SQUIRREL && cell->type != WOLF && cell->type != ICE) return 1;
+    else if (type == WOLF && cell->type != TREE && cell->type != ICE) return 1;
     else return 0;
 }
 
-void updateCurrentPosition(world *currentPosition) {
-    if (currentPosition->type == SQUIRRELONTREE) {
-        currentPosition->type = TREE;
+void updatecurrentCell(world *currentCell) {
+    if (currentCell->type == SQUIRRELONTREE) {
+        currentCell->type = TREE;
     } else {
-        currentPosition->type = EMPTY;
+        currentCell->type = EMPTY;
     }
 
     /* This is not needed, maibe we can remove it? */
-    currentPosition->breeding_period = 0;
-    currentPosition->starvation_period = 0;
+    currentCell->breeding_period = 0;
+    currentCell->starvation_period = 0;
 }
 
-void moveSquirrel(world *currentPosition, world *newPosition) {
-    if (newPosition->type == SQUIRREL || newPosition->type == SQUIRRELONTREE) {
-        processConflicts(currentPosition, newPosition);
-    } else if (newPosition->type == TREE) {
-        newPosition->type = SQUIRRELONTREE;
-        newPosition->starvation_period = currentPosition->starvation_period + 1;
-        newPosition->breeding_period = currentPosition->breeding_period - 1;
+void moveSquirrel(world *currentCell, world *newCell) {
+    if (newCell->type == SQUIRREL || newCell->type == SQUIRRELONTREE) {
+        processConflicts(currentCell, newCell);
+    } else if (newCell->type == TREE) {
+        newCell->type = SQUIRRELONTREE;
+        newCell->starvation_period = currentCell->starvation_period + 1;
+        newCell->breeding_period = currentCell->breeding_period - 1;
     } else {
-        newPosition->type = SQUIRREL;
-        newPosition->starvation_period = currentPosition->starvation_period + 1;
-        newPosition->breeding_period = currentPosition->breeding_period - 1;
+        newCell->type = SQUIRREL;
+        newCell->starvation_period = currentCell->starvation_period + 1;
+        newCell->breeding_period = currentCell->breeding_period - 1;
     }
 
-    updateCurrentPosition(currentPosition);
+    updatecurrentCell(currentCell);
 }
 
 int calculateSquirrelMoves(world ***board, int worldSize, position pos, world **movePossibilities) {
@@ -243,26 +245,25 @@ int calculateSquirrelMoves(world ***board, int worldSize, position pos, world **
 }
 
 void processSquirrel(world ***board, int worldSize, position pos) {
-    debug("Processing Squirrel @[%d, %d]...\n", pos.x, pos.y);
     int possibleMoves;
     world **movePossibilities;
-    world *currentPos, *newPosition;
+    world *currentCell, *newCell;
 
     movePossibilities = (world **) malloc(MOVES * sizeof(world *));
-    currentPos = &(*board)[pos.x][pos.y];
+    currentCell = &(*board)[pos.x][pos.y];
 
     possibleMoves = calculateSquirrelMoves(board, worldSize, pos, movePossibilities);
 
     if (possibleMoves > 1) {
         int c = pos.x * worldSize + pos.y;
-        newPosition = movePossibilities[c % possibleMoves];
+        newCell = movePossibilities[c % possibleMoves];
     } else if (possibleMoves == 1) {
-        newPosition = movePossibilities[possibleMoves];
+        newCell = movePossibilities[possibleMoves];
     } else {
         return;
     }
 
-    moveSquirrel(currentPos, newPosition);
+    moveSquirrel(currentCell, newCell);
 
     free(movePossibilities);
 }
