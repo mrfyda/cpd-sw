@@ -190,7 +190,7 @@ int canMove(int type, world *cell) {
     else return 0;
 }
 
-void updatecurrentCell(world *currentCell) {
+void updateCurrentCell(world *currentCell) {
     if (currentCell->type == SQUIRRELONTREE) {
         currentCell->type = TREE;
     } else {
@@ -215,7 +215,7 @@ void moveSquirrel(world *currentCell, world *newCell) {
         newCell->breeding_period = currentCell->breeding_period - 1;
     }
 
-    updatecurrentCell(currentCell);
+    updateCurrentCell(currentCell);
 }
 
 int calculateSquirrelMoves(world ***board, int worldSize, position pos, world **movePossibilities) {
@@ -260,6 +260,7 @@ void processSquirrel(world ***board, int worldSize, position pos) {
     } else if (possibleMoves == 1) {
         newCell = movePossibilities[possibleMoves];
     } else {
+        free(movePossibilities);
         return;
     }
 
