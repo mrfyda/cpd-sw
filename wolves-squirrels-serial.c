@@ -40,7 +40,8 @@ void printBoard(world **board, int worldSize);
 void debug(const char *format, ...);
 void processSquirrel(world ***board, int worldSize, position pos);
 void processWolf(world ***board);
-void processConflictsSameType(world *currentCell, world *newCell);
+void processConflictSameType(world *currentCell, world *newCell);
+void processConflict(world *currentCell, world *newCell);
 void processCell(world ***board, int worldSize, position pos);
 
 
@@ -168,6 +169,23 @@ void processCell(world ***board, int worldSize, position pos) {
     }
 }
 
+void processConflictSameType(world *currentCell, world *newCell) {
+    if (currentCell->starvation_period < newCell->starvation_period) {
+        newCell->starvation_period = currentCell->starvation_period;
+        newCell->breeding_period = currentCell->breeding_period;
+    } else if (currentCell->starvation_period > newCell->starvation_period) {
+        /* newCell is already up to date */
+    } else {
+        newCell->breeding_period = MAX(currentCell->breeding_period, newCell->breeding_period);
+    }
+}
+
+void processConflict(world *currentCell, world *newCell) {
+    newCell->type = WOLF;
+    newCell->starvation_period = currentCell->starvation_period - newCell->starvation_period;
+    newCell->breeding_period = currentCell->breeding_period;
+}
+
 void processConflictsSameType(world *currentCell, world *newCell) {
     if (currentCell->starvation_period < newCell->starvation_period) {
         newCell->starvation_period = currentCell->starvation_period;
@@ -187,7 +205,7 @@ int canMove(int type, world cell) {
 
 void moveSquirrel(world *currentCell, world *newCell) {
     if (newCell->type == SQUIRREL || newCell->type == SQUIRRELONTREE) {
-        processConflictsSameType(currentCell, newCell);
+        processConflictSameType(currentCell, newCell);
     } else if (newCell->type == TREE) {
         newCell->type = SQUIRRELONTREE;
         newCell->starvation_period = currentCell->starvation_period + 1;
