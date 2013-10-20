@@ -8,6 +8,7 @@ wolves-squirrels-serial.c
 #include <stdarg.h>
 
 #define DEBUG 1
+#define MAX(a, b) (((a) > (b)) ? (a) : (b))
 
 #define UP 0
 #define RIGHT 1
@@ -39,7 +40,7 @@ void printBoard(world **board, int worldSize);
 void debug(const char *format, ...);
 void processSquirrel(world ***board, int worldSize, position pos);
 void processWolf(world ***board);
-void processConflicts(world *currentCell, world *newCell);
+void processConflictsSameType(world *currentCell, world *newCell);
 void processCell(world ***board, int worldSize, position pos);
 
 
@@ -111,6 +112,8 @@ void readFile(char *path, world ***board, int *worldSize, int sbp, int wbp, int 
 
             for (j = 0; j < *worldSize; j++) {
                 (*board)[i][j].type = EMPTY;
+                (*board)[i][j].breeding_period = 0;
+                (*board)[i][j].starvation_period = 0;
             }
         }
 
@@ -122,21 +125,6 @@ void readFile(char *path, world ***board, int *worldSize, int sbp, int wbp, int 
             debug("Read from file: %d %d %c\n", x, y, symbol);
 
             (*board)[x][y].type = symbol;
-
-            switch (symbol) {
-            case SQUIRRELONTREE:
-            case SQUIRREL:
-                (*board)[x][y].breeding_period = sbp;
-                (*board)[x][y].starvation_period = 0;
-                break;
-            case WOLF:
-                (*board)[x][y].breeding_period = wbp;
-                (*board)[x][y].starvation_period = wsp;
-                break;
-            default :
-                (*board)[x][y].breeding_period = 0;
-                (*board)[x][y].starvation_period = 0;
-            }
         }
     }
 
@@ -180,8 +168,15 @@ void processCell(world ***board, int worldSize, position pos) {
     }
 }
 
-void processConflicts(world *currentCell, world *newCell) {
-    /* PROCESS CONFLICTS */
+void processConflictsSameType(world *currentCell, world *newCell) {
+    if (currentCell->starvation_period < newCell->starvation_period) {
+        newCell->starvation_period = currentCell->starvation_period;
+        newCell->breeding_period = currentCell->breeding_period;
+    } else if (currentCell->starvation_period > newCell->starvation_period) {
+        /* newCell is already up to date */
+    } else {
+        newCell->breeding_period = MAX(currentCell->breeding_period, newCell->breeding_period);
+    }
 }
 
 int canMove(int type, world cell) {
@@ -190,32 +185,28 @@ int canMove(int type, world cell) {
     else return 0;
 }
 
-void updateCurrentCell(world *currentCell) {
+void moveSquirrel(world *currentCell, world *newCell) {
+    if (newCell->type == SQUIRREL || newCell->type == SQUIRRELONTREE) {
+        processConflictsSameType(currentCell, newCell);
+    } else if (newCell->type == TREE) {
+        newCell->type = SQUIRRELONTREE;
+        newCell->starvation_period = currentCell->starvation_period + 1;
+        newCell->breeding_period = currentCell->breeding_period + 1;
+    } else {
+        newCell->type = SQUIRREL;
+        newCell->starvation_period = currentCell->starvation_period + 1;
+        newCell->breeding_period = currentCell->breeding_period + 1;
+    }
+
+    /* Check breeding period. Current cell may be left with a baby squirrel */
     if (currentCell->type == SQUIRRELONTREE) {
         currentCell->type = TREE;
     } else {
         currentCell->type = EMPTY;
     }
 
-    /* This is not needed, maibe we can remove it? */
     currentCell->breeding_period = 0;
     currentCell->starvation_period = 0;
-}
-
-void moveSquirrel(world *currentCell, world *newCell) {
-    if (newCell->type == SQUIRREL || newCell->type == SQUIRRELONTREE) {
-        processConflicts(currentCell, newCell);
-    } else if (newCell->type == TREE) {
-        newCell->type = SQUIRRELONTREE;
-        newCell->starvation_period = currentCell->starvation_period + 1;
-        newCell->breeding_period = currentCell->breeding_period - 1;
-    } else {
-        newCell->type = SQUIRREL;
-        newCell->starvation_period = currentCell->starvation_period + 1;
-        newCell->breeding_period = currentCell->breeding_period - 1;
-    }
-
-    updateCurrentCell(currentCell);
 }
 
 int calculateSquirrelMoves(world ***board, int worldSize, position pos, world **movePossibilities) {
