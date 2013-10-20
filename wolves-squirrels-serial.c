@@ -73,16 +73,19 @@ int main(int argc, char *argv[]) {
     numberOfGenerations = atoi(argv[5]);
     debug("Number of generations: %d\n", numberOfGenerations);
 
-    printBoard(board, worldSize);
-
     for (g = 0; g < numberOfGenerations; g++) {
+        printBoard(board, worldSize);
+
         for (currentPos.x = 0; currentPos.x < worldSize; currentPos.x++) {
             for (currentPos.y = currentPos.x % 2; currentPos.y < worldSize; currentPos.y += 2) {
                 processCell(&board, worldSize, currentPos);
             }
         }
+
+        printBoard(board, worldSize);
+
         for (currentPos.x = 0; currentPos.x < worldSize; currentPos.x++) {
-            for (currentPos.y = 1 - (currentPos.y % 2); currentPos.y < worldSize; currentPos.y += 2) {
+            for (currentPos.y = 1 - (currentPos.x % 2); currentPos.y < worldSize; currentPos.y += 2) {
                 processCell(&board, worldSize, currentPos);
             }
         }
