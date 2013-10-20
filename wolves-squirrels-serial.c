@@ -38,11 +38,11 @@ typedef struct {
 void readFile(char *path, world ***board, int *worldSize);
 void printBoard(world **board, int worldSize);
 void debug(const char *format, ...);
-void processSquirrel(world ***board, int worldSize, position pos);
+void processSquirrel(world ***board, int worldSize, position pos, int sBreedingPeriod);
 void processWolf(world ***board);
 void processConflictSameType(world *currentCell, world *newCell);
 void processConflict(world *currentCell, world *newCell);
-void processCell(world ***board, int worldSize, position pos);
+void processCell(world ***board, int worldSize, position pos, int sBreedingPeriod);
 
 
 int main(int argc, char *argv[]) {
@@ -78,7 +78,7 @@ int main(int argc, char *argv[]) {
 
         for (currentPos.x = 0; currentPos.x < worldSize; currentPos.x++) {
             for (currentPos.y = currentPos.x % 2; currentPos.y < worldSize; currentPos.y += 2) {
-                processCell(&board, worldSize, currentPos);
+                processCell(&board, worldSize, currentPos, squirrelBreedingPeriod);
             }
         }
 
@@ -86,7 +86,7 @@ int main(int argc, char *argv[]) {
 
         for (currentPos.x = 0; currentPos.x < worldSize; currentPos.x++) {
             for (currentPos.y = 1 - (currentPos.x % 2); currentPos.y < worldSize; currentPos.y += 2) {
-                processCell(&board, worldSize, currentPos);
+                processCell(&board, worldSize, currentPos, squirrelBreedingPeriod);
             }
         }
     }
@@ -158,12 +158,12 @@ void debug(const char *format, ...) {
     }
 }
 
-void processCell(world ***board, int worldSize, position pos) {
+void processCell(world ***board, int worldSize, position pos, int sBreedingPeriod) {
     switch ((*board)[pos.x][pos.y].type) {
     case SQUIRRELONTREE:
     case SQUIRREL:
         debug("Processing Squirrel @[%d, %d]...\n", pos.x, pos.y);
-        processSquirrel(board, worldSize, pos);
+        processSquirrel(board, worldSize, pos, sBreedingPeriod);
         break;
     case WOLF:
         debug("Processing Wolf @[%d, %d]...\n", pos.x, pos.y);
@@ -195,7 +195,7 @@ int canMove(int type, world cell) {
     else return 0;
 }
 
-void moveSquirrel(world *currentCell, world *newCell) {
+void moveSquirrel(world *currentCell, world *newCell, int sBreedingPeriod) {
     if (newCell->type == SQUIRREL || newCell->type == SQUIRRELONTREE) {
         processConflictSameType(currentCell, newCell);
     } else if (newCell->type == TREE) {
@@ -208,11 +208,13 @@ void moveSquirrel(world *currentCell, world *newCell) {
         newCell->breeding_period = currentCell->breeding_period + 1;
     }
 
-    /* Check breeding period. Current cell may be left with a baby squirrel */
-    if (currentCell->type == SQUIRRELONTREE) {
-        currentCell->type = TREE;
-    } else {
-        currentCell->type = EMPTY;
+
+    if (currentCell->breeding_period < sBreedingPeriod) {
+        if (currentCell->type == SQUIRRELONTREE) {
+            currentCell->type = TREE;
+        } else if (currentCell->type == SQUIRREL) {
+            currentCell->type = EMPTY;
+        }
     }
 
     currentCell->breeding_period = 0;
@@ -245,7 +247,7 @@ int calculateSquirrelMoves(world ***board, int worldSize, position pos, world **
     return possibleMoves;
 }
 
-void processSquirrel(world ***board, int worldSize, position pos) {
+void processSquirrel(world ***board, int worldSize, position pos, int sBreedingPeriod) {
     int possibleMoves;
     world **movePossibilities;
     world *currentCell, *newCell;
@@ -265,7 +267,7 @@ void processSquirrel(world ***board, int worldSize, position pos) {
         return;
     }
 
-    moveSquirrel(currentCell, newCell);
+    moveSquirrel(currentCell, newCell, sBreedingPeriod);
 
     free(movePossibilities);
 }
