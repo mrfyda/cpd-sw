@@ -186,17 +186,6 @@ void processConflict(world *currentCell, world *newCell) {
     newCell->breeding_period = currentCell->breeding_period;
 }
 
-void processConflictsSameType(world *currentCell, world *newCell) {
-    if (currentCell->starvation_period < newCell->starvation_period) {
-        newCell->starvation_period = currentCell->starvation_period;
-        newCell->breeding_period = currentCell->breeding_period;
-    } else if (currentCell->starvation_period > newCell->starvation_period) {
-        /* newCell is already up to date */
-    } else {
-        newCell->breeding_period = MAX(currentCell->breeding_period, newCell->breeding_period);
-    }
-}
-
 int canMove(int type, world cell) {
     if (type == SQUIRREL && cell.type != WOLF && cell.type != ICE) return 1;
     else if (type == WOLF && cell.type != TREE && cell.type != ICE) return 1;
