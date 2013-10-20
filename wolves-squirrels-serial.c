@@ -35,7 +35,7 @@ typedef struct {
     int y;
 } position;
 
-void readFile(char *path, world ***board, int *worldSize, int sbp, int wbp, int wsp);
+void readFile(char *path, world ***board, int *worldSize);
 void printBoard(world **board, int worldSize);
 void debug(const char *format, ...);
 void processSquirrel(world ***board, int worldSize, position pos);
@@ -67,7 +67,7 @@ int main(int argc, char *argv[]) {
     debug("Wolf starvation period: %d\n", wolfStarvationPeriod);
 
     debug("Reading from file: %s\n", argv[1]);
-    readFile(argv[1], &board, &worldSize, squirrelBreedingPeriod, wolfBreedingPeriod, wolfStarvationPeriod);
+    readFile(argv[1], &board, &worldSize);
 
     numberOfGenerations = atoi(argv[5]);
     debug("Number of generations: %d\n", numberOfGenerations);
@@ -97,7 +97,7 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-void readFile(char *path, world ***board, int *worldSize, int sbp, int wbp, int wsp) {
+void readFile(char *path, world ***board, int *worldSize) {
     char line[80];
     FILE *fr = fopen (path, "rt");
 
