@@ -39,10 +39,10 @@ void readFile(char *path, world ***board, int *worldSize);
 void printBoard(world **board, int worldSize);
 void debug(const char *format, ...);
 void processSquirrel(world ***board, int worldSize, position pos, int sBreedingPeriod);
-void processWolf(world ***board);
+void processWolf(world ***board, int worldSize, position pos, int wBreedingPeriod, int wStarvationPeriod);
 void processConflictSameType(world *currentCell, world *newCell);
 void processConflict(world *currentCell, world *newCell);
-void processCell(world ***board, int worldSize, position pos, int sBreedingPeriod);
+void processCell(world ***board, int worldSize, position pos, int wBreedingPeriod, int sBreedingPeriod, int wStarvationPeriod);
 
 
 int main(int argc, char *argv[]) {
@@ -78,7 +78,7 @@ int main(int argc, char *argv[]) {
 
         for (currentPos.x = 0; currentPos.x < worldSize; currentPos.x++) {
             for (currentPos.y = currentPos.x % 2; currentPos.y < worldSize; currentPos.y += 2) {
-                processCell(&board, worldSize, currentPos, squirrelBreedingPeriod);
+                processCell(&board, worldSize, currentPos, wolfBreedingPeriod, squirrelBreedingPeriod, wolfStarvationPeriod);
             }
         }
 
@@ -86,7 +86,7 @@ int main(int argc, char *argv[]) {
 
         for (currentPos.x = 0; currentPos.x < worldSize; currentPos.x++) {
             for (currentPos.y = 1 - (currentPos.x % 2); currentPos.y < worldSize; currentPos.y += 2) {
-                processCell(&board, worldSize, currentPos, squirrelBreedingPeriod);
+                processCell(&board, worldSize, currentPos, wolfBreedingPeriod, squirrelBreedingPeriod, wolfStarvationPeriod);
             }
         }
     }
@@ -158,7 +158,7 @@ void debug(const char *format, ...) {
     }
 }
 
-void processCell(world ***board, int worldSize, position pos, int sBreedingPeriod) {
+void processCell(world ***board, int worldSize, position pos, int wBreedingPeriod, int sBreedingPeriod, int wStarvationPeriod) {
     switch ((*board)[pos.x][pos.y].type) {
     case SQUIRRELONTREE:
     case SQUIRREL:
@@ -167,7 +167,7 @@ void processCell(world ***board, int worldSize, position pos, int sBreedingPerio
         break;
     case WOLF:
         debug("Processing Wolf @[%d, %d]...\n", pos.x, pos.y);
-        processWolf(board);
+        processWolf(board, worldSize, pos, wBreedingPeriod, wStarvationPeriod);
         break;
     }
 }
@@ -189,12 +189,20 @@ void processConflict(world *currentCell, world *newCell) {
     newCell->breeding_period = currentCell->breeding_period;
 }
 
+/*This function returns 0 if the animal can't move to the cell. When the animal is a wolf, this function verifies
+if the cell has a squirrel (returns 1) or it's empty (returns 2). When the animal is a squirrel, this function return 1
+if the squirrel can move to the cell.*/
 int canMove(int type, world cell) {
     if (type == SQUIRREL && cell.type != WOLF && cell.type != ICE) return 1;
-    else if (type == WOLF && cell.type != TREE && cell.type != ICE) return 1;
+    else if (type == WOLF && cell.type != TREE && cell.type != ICE && cell.type != SQUIRRELONTREE) {
+        if (cell.type == SQUIRREL) return 1;
+	else return 2;
+    }
     else return 0;
 }
 
+/*********************************************Squirrel Rules*********************************************/
+/********************************************************************************************************/
 void moveSquirrel(world *currentCell, world *newCell, int sBreedingPeriod) {
     if (newCell->type == SQUIRREL || newCell->type == SQUIRRELONTREE) {
         processConflictSameType(currentCell, newCell);
@@ -261,7 +269,7 @@ void processSquirrel(world ***board, int worldSize, position pos, int sBreedingP
         int c = pos.x * worldSize + pos.y;
         newCell = movePossibilities[c % possibleMoves];
     } else if (possibleMoves == 1) {
-        newCell = movePossibilities[possibleMoves];
+        newCell = movePossibilities[0];
     } else {
         free(movePossibilities);
         return;
@@ -271,7 +279,107 @@ void processSquirrel(world ***board, int worldSize, position pos, int sBreedingP
 
     free(movePossibilities);
 }
+/*******************************************Squirrel Rules End*******************************************/
+/********************************************************************************************************/
 
-void processWolf(world ***board) {
-    /* TODO: Do stuff */
+
+/***********************************************Wolf Rules***********************************************/
+/********************************************************************************************************/
+void moveWolf(world *currentCell, world *newCell, int wBreedingPeriod, int wStarvationPeriod) {
+    if (newCell->type == WOLF) {
+        processConflictSameType(currentCell, newCell);
+    } else if (newCell->type == SQUIRREL) {
+        newCell->type = WOLF;
+        newCell->starvation_period = 0;
+        newCell->breeding_period = currentCell->breeding_period + 1;
+    } else if ((currentCell->starvation_period + 1) < wStarvationPeriod) {
+        newCell->type = WOLF;
+        newCell->starvation_period = currentCell->starvation_period + 1;
+        newCell->breeding_period = currentCell->breeding_period + 1;
+    }
+
+
+    if (currentCell->breeding_period < wBreedingPeriod) {
+        currentCell->type = EMPTY;
+    }
+
+    currentCell->breeding_period = 0;
+    currentCell->starvation_period = 0;
 }
+
+int calculateWolfMoves(world ***board, int worldSize, position pos, world **movePossibilities) {
+    int possibleMoves = 0;
+    int squirrelFounded = 0;
+    int canMoveRes;
+
+    /* UP */
+    if (pos.x - 1 > -1 && (canMoveRes = canMove(WOLF, (*board)[pos.x - 1][pos.y]))) {
+        if (canMoveRes == 1) squirrelFounded = 1;
+        movePossibilities[possibleMoves++] = &(*board)[pos.x - 1][pos.y];
+    }
+
+    /* RIGHT */
+    if (pos.y + 1 < worldSize && (canMoveRes = canMove(WOLF, (*board)[pos.x - 1][pos.y]))) {
+        if (canMoveRes == 1) {
+            if (!squirrelFounded) {
+                squirrelFounded = 1;
+                possibleMoves = 0;
+            }
+            movePossibilities[possibleMoves++] = &(*board)[pos.x][pos.y + 1];
+        } else if (!squirrelFounded)
+            movePossibilities[possibleMoves++] = &(*board)[pos.x][pos.y + 1];
+    }
+
+    /* DOWN */
+    if (pos.x + 1 < worldSize && (canMoveRes = canMove(WOLF, (*board)[pos.x + 1][pos.y]))) {
+        if (canMoveRes == 1) {
+            if (!squirrelFounded) {
+                squirrelFounded = 1;
+                possibleMoves = 0;
+            }
+            movePossibilities[possibleMoves++] = &(*board)[pos.x + 1][pos.y];
+        } else if (!squirrelFounded)
+            movePossibilities[possibleMoves++] = &(*board)[pos.x + 1][pos.y];
+    }
+
+    /* LEFT */
+    if (pos.y - 1 > -1 && (canMoveRes = canMove(WOLF, (*board)[pos.x][pos.y - 1]))) {
+        if (canMoveRes == 1) {
+            if (!squirrelFounded) {
+                squirrelFounded = 1;
+                possibleMoves = 0;
+            }
+            movePossibilities[possibleMoves++] = &(*board)[pos.x][pos.y - 1];
+        } else if (!squirrelFounded)
+            movePossibilities[possibleMoves++] = &(*board)[pos.x][pos.y - 1];
+    }
+
+    return possibleMoves;
+}
+
+void processWolf(world ***board, int worldSize, position pos, int wBreedingPeriod, int wStarvationPeriod) {
+    int possibleMoves;
+    world **movePossibilities;
+    world *currentCell, *newCell;
+
+    movePossibilities = (world **) malloc(MOVES * sizeof(world *));
+    currentCell = &(*board)[pos.x][pos.y];
+
+    possibleMoves = calculateWolfMoves(board, worldSize, pos, movePossibilities);
+
+    if (possibleMoves > 1) {
+        int c = pos.x * worldSize + pos.y;
+        newCell = movePossibilities[c % possibleMoves];
+    } else if (possibleMoves == 1) {
+        newCell = movePossibilities[0];
+    } else {
+        free(movePossibilities);
+        return;
+    }
+
+    moveWolf(currentCell, newCell, wBreedingPeriod, wStarvationPeriod);
+
+    free(movePossibilities);
+}
+/*********************************************Wolf Rules End*********************************************/
+/********************************************************************************************************/
