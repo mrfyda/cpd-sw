@@ -208,16 +208,15 @@ void processConflict(world *oldCell, world *destCell) {
 
 /* This function returns a troolean:
  *     if cantMove -> 0
- * 	   if canMove  -> 1
+ *     if canMove  -> 1
  *     if canEat   -> 2
  */
 int canMove(int type, world cell) {
     if (type == SQUIRREL && (cell.type == TREE || cell.type == EMPTY)) return 1;
     else if (type == WOLF && (cell.type == SQUIRREL || cell.type == EMPTY)) {
         if (cell.type == SQUIRREL) return 2;
-		else return 1;
-    }
-    else return 0;
+        else return 1;
+    } else return 0;
 }
 
 /*********************************************Squirrel Rules*********************************************/
@@ -242,9 +241,9 @@ void moveSquirrel(world *oldCell, world *newCell, world *destCell) {
             newCell->type = SQUIRREL;
         }
         newCell->breeding_period = 0;
-		newCell->starvation_period = 0;
-		
-		destCell->breeding_period = 0;
+        newCell->starvation_period = 0;
+
+        destCell->breeding_period = 0;
     }
 }
 
@@ -322,7 +321,7 @@ void moveWolf(world *oldCell, world *newCell, world *destCell) {
         newCell->type = WOLF;
         newCell->breeding_period = 0;
         newCell->starvation_period = 0;
-        
+
         destCell->breeding_period = 0;
     }
 }
