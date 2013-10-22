@@ -55,7 +55,7 @@ int main(int argc, char *argv[]) {
     int worldSize;
     world **readBoard = NULL, **writeBoard = NULL, **tmp = NULL;
     int g;
-    position currentPos;
+    position pos;
 
     if (argc != 6)
         debug("Unexpected number of input: %d\n", argc);
@@ -76,33 +76,41 @@ int main(int argc, char *argv[]) {
     debug("Number of generations: %d\n", numberOfGenerations);
 
     for (g = 0; g < numberOfGenerations; g++) {
+        debug("Generation #%d\n", g + 1);
         printBoard(readBoard, worldSize);
 
-        for (currentPos.x = 0; currentPos.x < worldSize; currentPos.x++) {
-            for (currentPos.y = currentPos.x % 2; currentPos.y < worldSize; currentPos.y += 2) {
-                processCell(readBoard, &writeBoard, worldSize, currentPos);
+        for (pos.x = 0; pos.x < worldSize; pos.x++) {
+            for (pos.y = pos.x % 2; pos.y < worldSize; pos.y += 2) {
+                processCell(readBoard, &writeBoard, worldSize, pos);
             }
         }
 
+        /* copy writeBoard updates to readBoard */
         printBoard(readBoard, worldSize);
 
-        for (currentPos.x = 0; currentPos.x < worldSize; currentPos.x++) {
-            for (currentPos.y = 1 - (currentPos.x % 2); currentPos.y < worldSize; currentPos.y += 2) {
-                processCell(readBoard, &writeBoard, worldSize, currentPos);
+        for (pos.x = 0; pos.x < worldSize; pos.x++) {
+            for (pos.y = 1 - (pos.x % 2); pos.y < worldSize; pos.y += 2) {
+                processCell(readBoard, &writeBoard, worldSize, pos);
             }
         }
 
         tmp = readBoard;
         readBoard = writeBoard;
         writeBoard = tmp;
-        /* clean writeBoard */
+        for (pos.x = 0; pos.x < worldSize; pos.x++) {
+            for (pos.y = 0; pos.y < worldSize; pos.y++) {
+                if (writeBoard[pos.x][pos.y].type == WOLF || writeBoard[pos.x][pos.y].type == SQUIRREL)
+                    writeBoard[pos.x][pos.y].type = EMPTY;
+            }
+        }
     }
+
 
     printBoard(readBoard, worldSize);
 
-    for (currentPos.x = 0; currentPos.x < worldSize; currentPos.x++) {
-        free(readBoard[currentPos.x]);
-        free(writeBoard[currentPos.x]);
+    for (pos.x = 0; pos.x < worldSize; pos.x++) {
+        free(readBoard[pos.x]);
+        free(writeBoard[pos.x]);
     }
     free(readBoard);
     free(writeBoard);
@@ -143,7 +151,7 @@ void readFile(char *path, world ***readBoard, world ***writeBoard, int *worldSiz
             debug("Read from file: %d %d %c\n", x, y, symbol);
 
             (*readBoard)[x][y].type = symbol;
-            if (symbol != SQUIRREL || symbol != WOLF) {
+            if (symbol != SQUIRREL && symbol != WOLF) {
                 (*writeBoard)[x][y].type = symbol;
             }
         }
@@ -234,7 +242,7 @@ void moveSquirrel(world *oldCell, world *newCell, world *destCell) {
         destCell->breeding_period = oldCell->breeding_period + 1;
     }
 
-    if (!oldCell->breeding_period < squirrelBreedingPeriod) {
+    if (oldCell->breeding_period >= squirrelBreedingPeriod) {
         if (oldCell->type == SQUIRRELONTREE) {
             newCell->type = SQUIRRELONTREE;
         } else if (oldCell->type == SQUIRREL) {
@@ -317,7 +325,7 @@ void moveWolf(world *oldCell, world *newCell, world *destCell) {
         destCell->breeding_period = oldCell->breeding_period + 1;
     }
 
-    if (!oldCell->breeding_period < wolfBreedingPeriod) {
+    if (oldCell->breeding_period >= wolfBreedingPeriod) {
         newCell->type = WOLF;
         newCell->breeding_period = 0;
         newCell->starvation_period = 0;
