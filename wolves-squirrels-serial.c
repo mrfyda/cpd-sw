@@ -35,14 +35,14 @@ typedef struct {
     int y;
 } position;
 
-void readFile(char *path, world ***board, int *worldSize);
+void readFile(char *path, world ***readBoard, world ***writeBoard, int *worldSize);
 void printBoard(world **board, int worldSize);
 void debug(const char *format, ...);
 void processSquirrel(world ***board, int worldSize, position pos, int sBreedingPeriod);
 void processWolf(world ***board, int worldSize, position pos, int wBreedingPeriod, int wStarvationPeriod);
 void processConflictSameType(world *currentCell, world *newCell);
 void processConflict(world *currentCell, world *newCell);
-void processCell(world ***board, int worldSize, position pos, int wBreedingPeriod, int sBreedingPeriod, int wStarvationPeriod);
+void processCell(world **readBoard, world ***writeBoard, int worldSize, position pos, int wBreedingPeriod, int sBreedingPeriod, int wStarvationPeriod);
 
 
 int main(int argc, char *argv[]) {
@@ -51,7 +51,7 @@ int main(int argc, char *argv[]) {
     int wolfStarvationPeriod;
     int numberOfGenerations;
     int worldSize;
-    world **board = NULL;
+    world **readBoard = NULL, **writeBoard = NULL;
     int g;
     position currentPos;
 
@@ -68,40 +68,45 @@ int main(int argc, char *argv[]) {
     debug("Wolf starvation period: %d\n", wolfStarvationPeriod);
 
     debug("Reading from file: %s\n", argv[1]);
-    readFile(argv[1], &board, &worldSize);
+    readFile(argv[1], &readBoard, &writeBoard, &worldSize);
 
     numberOfGenerations = atoi(argv[5]);
     debug("Number of generations: %d\n", numberOfGenerations);
 
     for (g = 0; g < numberOfGenerations; g++) {
-        printBoard(board, worldSize);
+        printBoard(readBoard, worldSize);
 
         for (currentPos.x = 0; currentPos.x < worldSize; currentPos.x++) {
             for (currentPos.y = currentPos.x % 2; currentPos.y < worldSize; currentPos.y += 2) {
-                processCell(&board, worldSize, currentPos, wolfBreedingPeriod, squirrelBreedingPeriod, wolfStarvationPeriod);
+                processCell(readBoard, &writeBoard, worldSize, currentPos, wolfBreedingPeriod, squirrelBreedingPeriod, wolfStarvationPeriod);
             }
         }
 
-        printBoard(board, worldSize);
+        printBoard(readBoard, worldSize);
 
         for (currentPos.x = 0; currentPos.x < worldSize; currentPos.x++) {
             for (currentPos.y = 1 - (currentPos.x % 2); currentPos.y < worldSize; currentPos.y += 2) {
-                processCell(&board, worldSize, currentPos, wolfBreedingPeriod, squirrelBreedingPeriod, wolfStarvationPeriod);
+                processCell(readBoard, &writeBoard, worldSize, currentPos, wolfBreedingPeriod, squirrelBreedingPeriod, wolfStarvationPeriod);
             }
         }
+
+        readBoard = writeBoard;
+        /* clean writeBoard */
     }
 
-    printBoard(board, worldSize);
+    printBoard(readBoard, worldSize);
 
     for (currentPos.x = 0; currentPos.x < worldSize; currentPos.x++) {
-        free(board[currentPos.x]);
+        free(readBoard[currentPos.x]);
+        free(writeBoard[currentPos.x]);
     }
-    free(board);
+    free(readBoard);
+    free(writeBoard);
 
     return 0;
 }
 
-void readFile(char *path, world ***board, int *worldSize) {
+void readFile(char *path, world ***readBoard, world ***writeBoard, int *worldSize) {
     char line[80];
     FILE *fr = fopen (path, "rt");
 
@@ -110,14 +115,19 @@ void readFile(char *path, world ***board, int *worldSize) {
         sscanf(line, "%d", worldSize);
         debug("World size: %d\n", *worldSize);
 
-        *board = (world **) malloc(*worldSize * sizeof(world *));
+        *readBoard = (world **) malloc(*worldSize * sizeof(world *));
+        *writeBoard = (world **) malloc(*worldSize * sizeof(world *));
         for (i = 0; i < *worldSize; i++) {
-            (*board)[i] = (world *) malloc(*worldSize * sizeof(world));
+            (*readBoard)[i] = (world *) malloc(*worldSize * sizeof(world));
+            (*writeBoard)[i] = (world *) malloc(*worldSize * sizeof(world));
 
             for (j = 0; j < *worldSize; j++) {
-                (*board)[i][j].type = EMPTY;
-                (*board)[i][j].breeding_period = 0;
-                (*board)[i][j].starvation_period = 0;
+                (*readBoard)[i][j].type = EMPTY;
+                (*readBoard)[i][j].breeding_period = 0;
+                (*readBoard)[i][j].starvation_period = 0;
+                (*writeBoard)[i][j].type = EMPTY;
+                (*writeBoard)[i][j].breeding_period = 0;
+                (*writeBoard)[i][j].starvation_period = 0;
             }
         }
 
@@ -128,7 +138,10 @@ void readFile(char *path, world ***board, int *worldSize) {
             sscanf(line, "%d %d %c", &x, &y, &symbol);
             debug("Read from file: %d %d %c\n", x, y, symbol);
 
-            (*board)[x][y].type = symbol;
+            (*readBoard)[x][y].type = symbol;
+            if (symbol != SQUIRREL || symbol != WOLF) {
+                (*writeBoard)[x][y].type = symbol;
+            }
         }
     }
 
@@ -158,16 +171,16 @@ void debug(const char *format, ...) {
     }
 }
 
-void processCell(world ***board, int worldSize, position pos, int wBreedingPeriod, int sBreedingPeriod, int wStarvationPeriod) {
-    switch ((*board)[pos.x][pos.y].type) {
+void processCell(world **readBoard, world ***writeBoard, int worldSize, position pos, int wBreedingPeriod, int sBreedingPeriod, int wStarvationPeriod) {
+    switch (readBoard[pos.x][pos.y].type) {
     case SQUIRRELONTREE:
     case SQUIRREL:
         debug("Processing Squirrel @[%d, %d]...\n", pos.x, pos.y);
-        processSquirrel(board, worldSize, pos, sBreedingPeriod);
+        processSquirrel(&readBoard, worldSize, pos, sBreedingPeriod);
         break;
     case WOLF:
         debug("Processing Wolf @[%d, %d]...\n", pos.x, pos.y);
-        processWolf(board, worldSize, pos, wBreedingPeriod, wStarvationPeriod);
+        processWolf(&readBoard, worldSize, pos, wBreedingPeriod, wStarvationPeriod);
         break;
     }
 }
