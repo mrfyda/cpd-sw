@@ -338,7 +338,7 @@ int calculateWolfMoves(world **oldBoard, world ***newBoard, int worldSize, posit
     }
 
     /* RIGHT */
-    if (pos.y + 1 < worldSize && (canMoveRes = canMove(WOLF, oldBoard[pos.x - 1][pos.y]))) {
+    if (pos.y + 1 < worldSize && (canMoveRes = canMove(WOLF, oldBoard[pos.x][pos.y + 1]))) {
         if (canMoveRes == 2) {
             if (!squirrelFounded) {
                 squirrelFounded = 1;
