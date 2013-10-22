@@ -247,26 +247,26 @@ void moveSquirrel(world *oldCell, world *newCell, world *destCell) {
     }
 }
 
-int calculateSquirrelMoves(world ***oldBoard, world ***newBoard, int worldSize, position pos, world **movePossibilities) {
+int calculateSquirrelMoves(world **oldBoard, world ***newBoard, int worldSize, position pos, world **movePossibilities) {
     int possibleMoves = 0;
 
     /* UP */
-    if (pos.x - 1 > -1 && canMove(SQUIRREL, (*oldBoard)[pos.x - 1][pos.y])) {
+    if (pos.x - 1 > -1 && canMove(SQUIRREL, oldBoard[pos.x - 1][pos.y])) {
         movePossibilities[possibleMoves++] = &(*newBoard)[pos.x - 1][pos.y];
     }
 
     /* RIGHT */
-    if (pos.y + 1 < worldSize && canMove(SQUIRREL, (*oldBoard)[pos.x][pos.y + 1])) {
+    if (pos.y + 1 < worldSize && canMove(SQUIRREL, oldBoard[pos.x][pos.y + 1])) {
         movePossibilities[possibleMoves++] = &(*newBoard)[pos.x][pos.y + 1];
     }
 
     /* DOWN */
-    if (pos.x + 1 < worldSize && canMove(SQUIRREL, (*oldBoard)[pos.x + 1][pos.y])) {
+    if (pos.x + 1 < worldSize && canMove(SQUIRREL, oldBoard[pos.x + 1][pos.y])) {
         movePossibilities[possibleMoves++] = &(*newBoard)[pos.x + 1][pos.y];
     }
 
     /* LEFT */
-    if (pos.y - 1 > -1 && canMove(SQUIRREL, (*oldBoard)[pos.x][pos.y - 1])) {
+    if (pos.y - 1 > -1 && canMove(SQUIRREL, oldBoard[pos.x][pos.y - 1])) {
         movePossibilities[possibleMoves++] = &(*newBoard)[pos.x][pos.y - 1];
     }
 
@@ -282,7 +282,7 @@ void processSquirrel(world **oldBoard, world ***newBoard, int worldSize, positio
     oldCell = &oldBoard[pos.x][pos.y];
     newCell = &(*newBoard)[pos.x][pos.y];
 
-    possibleMoves = calculateSquirrelMoves(&oldBoard, newBoard, worldSize, pos, movePossibilities);
+    possibleMoves = calculateSquirrelMoves(oldBoard, newBoard, worldSize, pos, movePossibilities);
 
     if (possibleMoves > 1) {
         int c = pos.x * worldSize + pos.y;
@@ -326,19 +326,19 @@ void moveWolf(world *oldCell, world *newCell, world *destCell) {
     }
 }
 
-int calculateWolfMoves(world ***oldBoard, world ***newBoard, int worldSize, position pos, world **movePossibilities) {
+int calculateWolfMoves(world **oldBoard, world ***newBoard, int worldSize, position pos, world **movePossibilities) {
     int possibleMoves = 0;
     int squirrelFounded = 0;
     int canMoveRes;
 
     /* UP */
-    if (pos.x - 1 > -1 && (canMoveRes = canMove(WOLF, (*oldBoard)[pos.x - 1][pos.y]))) {
+    if (pos.x - 1 > -1 && (canMoveRes = canMove(WOLF, oldBoard[pos.x - 1][pos.y]))) {
         if (canMoveRes == 2) squirrelFounded = 1;
         movePossibilities[possibleMoves++] = &(*newBoard)[pos.x - 1][pos.y];
     }
 
     /* RIGHT */
-    if (pos.y + 1 < worldSize && (canMoveRes = canMove(WOLF, (*oldBoard)[pos.x - 1][pos.y]))) {
+    if (pos.y + 1 < worldSize && (canMoveRes = canMove(WOLF, oldBoard[pos.x - 1][pos.y]))) {
         if (canMoveRes == 2) {
             if (!squirrelFounded) {
                 squirrelFounded = 1;
@@ -350,7 +350,7 @@ int calculateWolfMoves(world ***oldBoard, world ***newBoard, int worldSize, posi
     }
 
     /* DOWN */
-    if (pos.x + 1 < worldSize && (canMoveRes = canMove(WOLF, (*oldBoard)[pos.x + 1][pos.y]))) {
+    if (pos.x + 1 < worldSize && (canMoveRes = canMove(WOLF, oldBoard[pos.x + 1][pos.y]))) {
         if (canMoveRes == 2) {
             if (!squirrelFounded) {
                 squirrelFounded = 1;
@@ -362,7 +362,7 @@ int calculateWolfMoves(world ***oldBoard, world ***newBoard, int worldSize, posi
     }
 
     /* LEFT */
-    if (pos.y - 1 > -1 && (canMoveRes = canMove(WOLF, (*oldBoard)[pos.x][pos.y - 1]))) {
+    if (pos.y - 1 > -1 && (canMoveRes = canMove(WOLF, oldBoard[pos.x][pos.y - 1]))) {
         if (canMoveRes == 2) {
             if (!squirrelFounded) {
                 squirrelFounded = 1;
@@ -385,7 +385,7 @@ void processWolf(world **oldBoard, world ***newBoard, int worldSize, position po
     oldCell = &oldBoard[pos.x][pos.y];
     newCell = &(*newBoard)[pos.x][pos.y];
 
-    possibleMoves = calculateWolfMoves(&oldBoard, newBoard, worldSize, pos, movePossibilities);
+    possibleMoves = calculateWolfMoves(oldBoard, newBoard, worldSize, pos, movePossibilities);
 
     if (possibleMoves > 1) {
         int c = pos.x * worldSize + pos.y;
