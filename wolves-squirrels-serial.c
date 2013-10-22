@@ -53,7 +53,7 @@ int wolfStarvationPeriod;
 int main(int argc, char *argv[]) {
     int numberOfGenerations;
     int worldSize;
-    world **readBoard = NULL, **writeBoard = NULL;
+    world **readBoard = NULL, **writeBoard = NULL, **tmp = NULL;
     int g;
     position currentPos;
 
@@ -92,7 +92,9 @@ int main(int argc, char *argv[]) {
             }
         }
 
+        tmp = readBoard;
         readBoard = writeBoard;
+        writeBoard = tmp;
         /* clean writeBoard */
     }
 
