@@ -97,7 +97,7 @@ void push(Stack *s, position p) {
 position pop(Stack *s) {
     if (s->size == 0) {
         position p = { -1, -1};
-        debug(stderr, "Stack is empty\n");
+        debug("Stack is empty\n");
         return p;
     } else {
         s->size--;
@@ -306,27 +306,34 @@ void moveSquirrel(world *oldCell, world *newCell, world *destCell) {
     }
 }
 
-int calculateSquirrelMoves(world **oldBoard, world ***newBoard, int worldSize, position pos, world **movePossibilities) {
+int calculateSquirrelMoves(world **oldBoard, int worldSize, position pos, position *possiblePos) {
     int possibleMoves = 0;
+    position p;
+    p.x = pos.x;
+    p.y = pos.y;
 
     /* UP */
     if (pos.x - 1 > -1 && canMove(SQUIRREL, oldBoard[pos.x - 1][pos.y])) {
-        movePossibilities[possibleMoves++] = &(*newBoard)[pos.x - 1][pos.y];
+        p.x -= 1;
+        possiblePos[possibleMoves++] = p;
     }
 
     /* RIGHT */
     if (pos.y + 1 < worldSize && canMove(SQUIRREL, oldBoard[pos.x][pos.y + 1])) {
-        movePossibilities[possibleMoves++] = &(*newBoard)[pos.x][pos.y + 1];
+        p.y += 1;
+        possiblePos[possibleMoves++] = p;
     }
 
     /* DOWN */
     if (pos.x + 1 < worldSize && canMove(SQUIRREL, oldBoard[pos.x + 1][pos.y])) {
-        movePossibilities[possibleMoves++] = &(*newBoard)[pos.x + 1][pos.y];
+        p.x += 1;
+        possiblePos[possibleMoves++] = p;
     }
 
     /* LEFT */
     if (pos.y - 1 > -1 && canMove(SQUIRREL, oldBoard[pos.x][pos.y - 1])) {
-        movePossibilities[possibleMoves++] = &(*newBoard)[pos.x][pos.y - 1];
+        p.y -= 1;
+        possiblePos[possibleMoves++] = p;
     }
 
     return possibleMoves;
@@ -334,28 +341,26 @@ int calculateSquirrelMoves(world **oldBoard, world ***newBoard, int worldSize, p
 
 void processSquirrel(world **oldBoard, world ***newBoard, int worldSize, position pos) {
     int possibleMoves;
-    world **movePossibilities;
+    position possiblePos[MOVES];
     world *oldCell, *newCell, *destCell;
 
-    movePossibilities = (world **) malloc(MOVES * sizeof(world *));
     oldCell = &oldBoard[pos.x][pos.y];
     newCell = &(*newBoard)[pos.x][pos.y];
 
-    possibleMoves = calculateSquirrelMoves(oldBoard, newBoard, worldSize, pos, movePossibilities);
+    possibleMoves = calculateSquirrelMoves(oldBoard, worldSize, pos, possiblePos);
 
     if (possibleMoves > 1) {
         int c = pos.x * worldSize + pos.y;
-        destCell = movePossibilities[c % possibleMoves];
+        position p = possiblePos[c % possibleMoves];
+        destCell = &(*newBoard)[p.x][p.y];
     } else if (possibleMoves == 1) {
-        destCell = movePossibilities[0];
+        position p = possiblePos[0];
+        destCell = &(*newBoard)[p.x][p.y];
     } else {
-        free(movePossibilities);
         return;
     }
 
     moveSquirrel(oldCell, newCell, destCell);
-
-    free(movePossibilities);
 }
 /*******************************************Squirrel Rules End*******************************************/
 /********************************************************************************************************/
