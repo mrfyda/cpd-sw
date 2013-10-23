@@ -10,7 +10,7 @@
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 
 /*
-    Wolves&Squirrels Utils
+    Wolves & Squirrels Utils
 */
 
 #define EMPTY '.'
@@ -110,7 +110,7 @@ void destroy(Stack *s) {
 }
 
 /*
-    main
+    Wolves & Squirrels
 */
 
 int main(int argc, char *argv[]) {
@@ -248,6 +248,10 @@ void processCell(world **readBoard, world ***writeBoard, int worldSize, position
     }
 }
 
+/*
+    Conflicts
+*/
+
 void processConflictSameType(world *oldCell, world *destCell) {
     if (oldCell->starvation_period < destCell->starvation_period) {
         destCell->starvation_period = oldCell->starvation_period;
@@ -278,8 +282,14 @@ int canMove(int type, world cell) {
     } else return 0;
 }
 
-/*********************************************Squirrel Rules*********************************************/
-/********************************************************************************************************/
+/*
+    Squirrel Rules
+*/
+
+int canSquirrelMove(world cell) {
+    return cell.type == TREE || cell.type == EMPTY;
+}
+
 void moveSquirrel(world *oldCell, world *newCell, world *destCell) {
     if (destCell->type == SQUIRREL || destCell->type == SQUIRRELONTREE) {
         processConflictSameType(oldCell, destCell);
@@ -313,25 +323,25 @@ int calculateSquirrelMoves(world **oldBoard, int worldSize, position pos, positi
     p.y = pos.y;
 
     /* UP */
-    if (pos.x - 1 > -1 && canMove(SQUIRREL, oldBoard[pos.x - 1][pos.y])) {
+    if (pos.x - 1 > -1 && canSquirrelMove(oldBoard[pos.x - 1][pos.y])) {
         p.x -= 1;
         possiblePos[possibleMoves++] = p;
     }
 
     /* RIGHT */
-    if (pos.y + 1 < worldSize && canMove(SQUIRREL, oldBoard[pos.x][pos.y + 1])) {
+    if (pos.y + 1 < worldSize && canSquirrelMove(oldBoard[pos.x][pos.y + 1])) {
         p.y += 1;
         possiblePos[possibleMoves++] = p;
     }
 
     /* DOWN */
-    if (pos.x + 1 < worldSize && canMove(SQUIRREL, oldBoard[pos.x + 1][pos.y])) {
+    if (pos.x + 1 < worldSize && canSquirrelMove(oldBoard[pos.x + 1][pos.y])) {
         p.x += 1;
         possiblePos[possibleMoves++] = p;
     }
 
     /* LEFT */
-    if (pos.y - 1 > -1 && canMove(SQUIRREL, oldBoard[pos.x][pos.y - 1])) {
+    if (pos.y - 1 > -1 && canSquirrelMove(oldBoard[pos.x][pos.y - 1])) {
         p.y -= 1;
         possiblePos[possibleMoves++] = p;
     }
