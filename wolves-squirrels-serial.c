@@ -1,7 +1,6 @@
 /*
-wolves-squirrels-serial.c
-
-**************************************************************************/
+    wolves-squirrels-serial.c
+*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,10 +9,9 @@ wolves-squirrels-serial.c
 #define DEBUG 1
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 
-#define UP 0
-#define RIGHT 1
-#define DOWN 2
-#define LEFT 3
+/*
+    Wolves&Squirrels Utils
+*/
 
 #define EMPTY '.'
 #define WOLF 'w'
@@ -44,11 +42,76 @@ void processConflictSameType(world *currentCell, world *newCell);
 void processConflict(world *currentCell, world *newCell);
 void processCell(world **readBoard, world ***writeBoard, int worldSize, position pos);
 
+void debug(const char *format, ...) {
+    if (DEBUG) {
+        va_list arg;
+
+        va_start (arg, format);
+        vfprintf (stdout, format, arg);
+        va_end (arg);
+
+        fflush(stdout);
+    }
+}
+
 
 int wolfBreedingPeriod;
 int squirrelBreedingPeriod;
 int wolfStarvationPeriod;
 
+/*
+    Stack
+*/
+
+typedef struct {
+    position *data;
+    int size;
+    int maxSize;
+} Stack;
+
+
+void init(Stack *s, int maxSize) {
+    s->data = (position *) malloc(maxSize * sizeof(position));
+    s->size = 0;
+    s->maxSize = maxSize;
+}
+
+position top(Stack *s) {
+    if (s->size == 0) {
+        position p = { -1, -1};
+        debug("Stack is empty\n");
+        return p;
+    }
+
+    return s->data[s->size - 1];
+}
+
+void push(Stack *s, position p) {
+    if (s->size < s->maxSize) {
+        s->data[s->size++] = p;
+    } else {
+        debug("Stack is full\n");
+    }
+}
+
+position pop(Stack *s) {
+    if (s->size == 0) {
+        position p = { -1, -1};
+        debug(stderr, "Stack is empty\n");
+        return p;
+    } else {
+        s->size--;
+        return s->data[s->size--];
+    }
+}
+
+void destroy(Stack *s) {
+    free(s->data);
+}
+
+/*
+    main
+*/
 
 int main(int argc, char *argv[]) {
     int numberOfGenerations;
@@ -168,18 +231,6 @@ void printBoard(world **board, int worldSize) {
             debug("%c ", board[i][j].type);
         }
         debug("\n");
-    }
-}
-
-void debug(const char *format, ...) {
-    if (DEBUG) {
-        va_list arg;
-
-        va_start (arg, format);
-        vfprintf (stdout, format, arg);
-        va_end (arg);
-
-        fflush(stdout);
     }
 }
 
