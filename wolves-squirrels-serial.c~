@@ -84,6 +84,7 @@ typedef struct {
     int type;
     int breeding_period;
     int starvation_period;
+    int processed;
 } world;
 
 void readFile(char *path, world ***readBoard, world ***writeBoard, int *worldSize);
@@ -209,9 +210,11 @@ void readFile(char *path, world ***readBoard, world ***writeBoard, int *worldSiz
                 (*readBoard)[i][j].type = EMPTY;
                 (*readBoard)[i][j].breeding_period = 0;
                 (*readBoard)[i][j].starvation_period = 0;
+                (*readBoard)[i][j].processed = 0;
                 (*writeBoard)[i][j].type = EMPTY;
                 (*writeBoard)[i][j].breeding_period = 0;
                 (*writeBoard)[i][j].starvation_period = 0;
+                (*writeBoard)[i][j].processed = 0;
             }
         }
 
@@ -312,7 +315,7 @@ void moveSquirrel(world *oldCell, world *newCell, world *destCell) {
         destCell->starvation_period = oldCell->starvation_period + 1;
         destCell->breeding_period = oldCell->breeding_period + 1;
     }
-
+debug("===========> %d\n", oldCell->processed);
     if (oldCell->breeding_period >= squirrelBreedingPeriod) {
         if (oldCell->type == SQUIRRELONTREE) {
             newCell->type = SQUIRRELONTREE;
@@ -328,6 +331,8 @@ void moveSquirrel(world *oldCell, world *newCell, world *destCell) {
             newCell->type = EMPTY;
         }
     }
+
+    destCell->processed = 1;
 
     newCell->breeding_period = 0;
     newCell->starvation_period = 0;
@@ -378,7 +383,7 @@ void processSquirrel(world **oldBoard, world ***newBoard, int worldSize, positio
     possibleMoves = calculateSquirrelMoves(oldBoard, worldSize, pos, possiblePos);
 
     push(s, pos);
-
+debug("===========> (%d,%d)\n", pos.x, pos.y);
     if (possibleMoves > 1) {
         int c = pos.x * worldSize + pos.y;
         destPos = possiblePos[c % possibleMoves];
@@ -406,7 +411,7 @@ int canMove(world cell) {
     case SQUIRREL:
         return 2;
     case EMPTY:
-        return 1;;
+        return 1;
     default:
         return 0;
     }
@@ -419,8 +424,11 @@ void moveWolf(world *oldCell, world *newCell, world *destCell) {
         processConflict(oldCell, destCell);
     } else if ((oldCell->starvation_period + 1) < wolfStarvationPeriod) {
         destCell->type = WOLF;
-        destCell->starvation_period = oldCell->starvation_period + 1;
-        destCell->breeding_period = oldCell->breeding_period + 1;
+        destCell->starvation_period = oldCell->starvation_period;
+        destCell->breeding_period = oldCell->breeding_period;
+        destCell->processed = oldCell->processed;
+    } else {
+        destCell->processed = 0;
     }
 
     if (oldCell->breeding_period >= wolfBreedingPeriod) {
@@ -524,6 +532,15 @@ void processWolf(world **oldBoard, world ***newBoard, int worldSize, position po
     }
 
     moveWolf(oldCell, newCell, destCell);
+
+    if (oldCell->processed) {
+        destCell->starvation_period++;
+        destCell->breeding_period++;
+        destCell->processed = 0;
+    } else {
+        destCell->processed = 1;
+    } 
+
     push(s, destPos);
 }
 /*********************************************Wolf Rules End*********************************************/
