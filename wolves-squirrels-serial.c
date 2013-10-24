@@ -57,7 +57,6 @@ void push(stack *s, position p) {
 position pop(stack *s) {
     if (s->size == 0) {
         position p = { -1, -1 };
-        debug("stack is empty\n");
         return p;
     }
 
@@ -72,7 +71,7 @@ void destroy(stack *s) {
     Wolves & Squirrels
 */
 
-#define EMPTY '.'
+#define EMPTY ' '
 #define WOLF 'w'
 #define SQUIRREL 's'
 #define TREE 't'
@@ -88,7 +87,7 @@ typedef struct {
 } world;
 
 void readFile(char *path, world ***readBoard, world ***writeBoard, int *worldSize);
-void printBoard(world **board, int worldSize);
+void debugBoard(world **board, int worldSize);
 void debug(const char *format, ...);
 void processSquirrel(world **oldBoard, world ***newBoard, int worldSize, position pos, stack *s);
 void processWolf(world **oldBoard, world ***newBoard, int worldSize, position pos, stack *s);
@@ -130,11 +129,10 @@ int main(int argc, char *argv[]) {
 
     init(&updatedCells, worldSize * worldSize);
 
+    debugBoard(readBoard, worldSize);
+
     /* process each generation */
     for (g = 0; g < numberOfGenerations; g++) {
-        debug("Generation #%d\n", g + 1);
-        printBoard(readBoard, worldSize);
-
         /* process first sub generation */
         for (pos.x = 0; pos.x < worldSize; pos.x++) {
             for (pos.y = pos.x % 2; pos.y < worldSize; pos.y += 2) {
@@ -151,7 +149,8 @@ int main(int argc, char *argv[]) {
                 readBoard[pos.x][pos.y] = writeBoard[pos.x][pos.y];
             }
         }
-        printBoard(readBoard, worldSize);
+        debug("Iteration %d Red\n", g + 1);
+        debugBoard(readBoard, worldSize);
 
         /* process second sub generation */
         for (pos.x = 0; pos.x < worldSize; pos.x++) {
@@ -160,26 +159,21 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        /* swap writeBoard to readBoard */
-        tmp = readBoard;
-        readBoard = writeBoard;
-        writeBoard = tmp;
-
-        /* clear writeBoard */
-        for (pos.x = 0; pos.x < worldSize; pos.x++) {
-            for (pos.y = 0; pos.y < worldSize; pos.y++) {
-                if (writeBoard[pos.x][pos.y].type == WOLF || writeBoard[pos.x][pos.y].type == SQUIRREL)
-                    writeBoard[pos.x][pos.y].type = EMPTY;
+        /* copy updated cells to readBoard */
+        while (1) {
+            pos = pop(&updatedCells);
+            if  (pos.x == -1) {
+                break;
+            } else {
+                readBoard[pos.x][pos.y] = writeBoard[pos.x][pos.y];
             }
         }
 
-        /* clear updated cells */
-        do {
-            pos = pop(&updatedCells);
-        } while (pos.x != -1);
+        debug("Iteration %d Black\n", g + 1);
+        debugBoard(readBoard, worldSize);
     }
 
-    printBoard(readBoard, worldSize);
+    /*printBoardList(readBoard, worldSize);*/
 
     for (pos.x = 0; pos.x < worldSize; pos.x++) {
         free(readBoard[pos.x]);
@@ -226,35 +220,38 @@ void readFile(char *path, world ***readBoard, world ***writeBoard, int *worldSiz
             debug("Read from file: %d %d %c\n", x, y, symbol);
 
             (*readBoard)[x][y].type = symbol;
-            if (symbol != SQUIRREL && symbol != WOLF) {
-                (*writeBoard)[x][y].type = symbol;
-            }
+            (*writeBoard)[x][y].type = symbol;
         }
     }
 
     fclose(fr);
 }
 
-void printBoard(world **board, int worldSize) {
+void debugBoard(world **board, int worldSize) {
     int i, j;
-
+    debug("---------------------------------\n   ");
     for (i = 0; i < worldSize; i++) {
+        debug("%02d|", i);
+    }
+    debug("\n");
+    for (i = 0; i < worldSize; i++) {
+        debug("%02d: ", i);
         for (j = 0; j < worldSize; j++) {
-            debug("%c ", board[i][j].type);
+            debug("%1c| ", board[i][j].type);
         }
         debug("\n");
     }
+    debug("---------------------------------\n\n");
+
 }
 
 void processCell(world **readBoard, world ***writeBoard, int worldSize, position pos, stack *s) {
     switch (readBoard[pos.x][pos.y].type) {
     case SQUIRRELONTREE:
     case SQUIRREL:
-        debug("Processing Squirrel @[%d, %d]...\n", pos.x, pos.y);
         processSquirrel(readBoard, writeBoard, worldSize, pos, s);
         break;
     case WOLF:
-        debug("Processing Wolf @[%d, %d]...\n", pos.x, pos.y);
         processWolf(readBoard, writeBoard, worldSize, pos, s);
         break;
     }
@@ -277,7 +274,7 @@ void processConflictSameType(world *oldCell, world *destCell) {
 
 void processConflict(world *oldCell, world *destCell) {
     destCell->type = WOLF;
-    destCell->starvation_period = oldCell->starvation_period - destCell->starvation_period;
+    destCell->starvation_period = - (destCell->starvation_period + wolfStarvationPeriod);
     destCell->breeding_period = oldCell->breeding_period;
 }
 
@@ -308,37 +305,47 @@ void moveSquirrel(world *oldCell, world *newCell, world *destCell) {
         } else if (oldCell->type == SQUIRREL) {
             newCell->type = SQUIRREL;
         }
-        newCell->breeding_period = 0;
-        newCell->starvation_period = 0;
 
         destCell->breeding_period = 0;
+    } else {
+         if (oldCell->type == SQUIRRELONTREE) {
+            newCell->type = TREE;
+        } else if (oldCell->type == SQUIRREL) {
+            newCell->type = EMPTY;
+        }
     }
+
+    newCell->breeding_period = 0;
+    newCell->starvation_period = 0;
 }
 
 int calculateSquirrelMoves(world **oldBoard, int worldSize, position pos, position *possiblePos) {
     int possibleMoves = 0;
-    position p = pos;
 
     /* UP */
     if (pos.x - 1 > -1 && canSquirrelMove(oldBoard[pos.x - 1][pos.y])) {
+        position p = pos;
         p.x -= 1;
         possiblePos[possibleMoves++] = p;
     }
 
     /* RIGHT */
     if (pos.y + 1 < worldSize && canSquirrelMove(oldBoard[pos.x][pos.y + 1])) {
+        position p = pos;
         p.y += 1;
         possiblePos[possibleMoves++] = p;
     }
 
     /* DOWN */
     if (pos.x + 1 < worldSize && canSquirrelMove(oldBoard[pos.x + 1][pos.y])) {
+        position p = pos;
         p.x += 1;
         possiblePos[possibleMoves++] = p;
     }
 
     /* LEFT */
     if (pos.y - 1 > -1 && canSquirrelMove(oldBoard[pos.x][pos.y - 1])) {
+        position p = pos;
         p.y -= 1;
         possiblePos[possibleMoves++] = p;
     }
@@ -356,6 +363,8 @@ void processSquirrel(world **oldBoard, world ***newBoard, int worldSize, positio
 
     possibleMoves = calculateSquirrelMoves(oldBoard, worldSize, pos, possiblePos);
 
+    push(s, pos);
+
     if (possibleMoves > 1) {
         int c = pos.x * worldSize + pos.y;
         destPos = possiblePos[c % possibleMoves];
@@ -364,6 +373,7 @@ void processSquirrel(world **oldBoard, world ***newBoard, int worldSize, positio
         destPos = possiblePos[0];
         destCell = &(*newBoard)[destPos.x][destPos.y];
     } else {
+        newCell->starvation_period++;
         return;
     }
 
@@ -392,9 +402,7 @@ void moveWolf(world *oldCell, world *newCell, world *destCell) {
     if (destCell->type == WOLF) {
         processConflictSameType(oldCell, destCell);
     } else if (destCell->type == SQUIRREL) {
-        destCell->type = WOLF;
-        destCell->starvation_period = 0;
-        destCell->breeding_period = oldCell->breeding_period + 1;
+        processConflict(oldCell, destCell);
     } else if ((oldCell->starvation_period + 1) < wolfStarvationPeriod) {
         destCell->type = WOLF;
         destCell->starvation_period = oldCell->starvation_period + 1;
@@ -403,21 +411,24 @@ void moveWolf(world *oldCell, world *newCell, world *destCell) {
 
     if (oldCell->breeding_period >= wolfBreedingPeriod) {
         newCell->type = WOLF;
-        newCell->breeding_period = 0;
-        newCell->starvation_period = 0;
 
         destCell->breeding_period = 0;
+    } else {
+        newCell->type = EMPTY;
     }
+
+    newCell->breeding_period = 0;
+    newCell->starvation_period = 0;
 }
 
 int calculateWolfMoves(world **oldBoard, world ***newBoard, int worldSize, position pos, position *possiblePos) {
     int possibleMoves = 0;
-    position p = pos;
     int squirrelFound = 0;
     int canMoveRes;
 
     /* UP */
     if (pos.x - 1 > -1 && (canMoveRes = canMove(oldBoard[pos.x - 1][pos.y]))) {
+        position p = pos;
         if (canMoveRes == 2) squirrelFound = 1;
         p.x -= 1;
         possiblePos[possibleMoves++] = p;
@@ -425,6 +436,7 @@ int calculateWolfMoves(world **oldBoard, world ***newBoard, int worldSize, posit
 
     /* RIGHT */
     if (pos.y + 1 < worldSize && (canMoveRes = canMove(oldBoard[pos.x][pos.y + 1]))) {
+        position p = pos;
         if (canMoveRes == 2) {
             if (!squirrelFound) {
                 squirrelFound = 1;
@@ -440,6 +452,7 @@ int calculateWolfMoves(world **oldBoard, world ***newBoard, int worldSize, posit
 
     /* DOWN */
     if (pos.x + 1 < worldSize && (canMoveRes = canMove(oldBoard[pos.x + 1][pos.y]))) {
+        position p = pos;
         if (canMoveRes == 2) {
             if (!squirrelFound) {
                 squirrelFound = 1;
@@ -455,6 +468,7 @@ int calculateWolfMoves(world **oldBoard, world ***newBoard, int worldSize, posit
 
     /* LEFT */
     if (pos.y - 1 > -1 && (canMoveRes = canMove(oldBoard[pos.x][pos.y - 1]))) {
+        position p = pos;
         if (canMoveRes == 2) {
             if (!squirrelFound) {
                 squirrelFound = 1;
@@ -473,7 +487,6 @@ int calculateWolfMoves(world **oldBoard, world ***newBoard, int worldSize, posit
 
 void processWolf(world **oldBoard, world ***newBoard, int worldSize, position pos, stack *s) {
     int possibleMoves;
-    world **movePossibilities;
     position destPos, possiblePos[MOVES];
     world *oldCell, *newCell, *destCell;
 
@@ -481,6 +494,8 @@ void processWolf(world **oldBoard, world ***newBoard, int worldSize, position po
     newCell = &(*newBoard)[pos.x][pos.y];
 
     possibleMoves = calculateWolfMoves(oldBoard, newBoard, worldSize, pos, possiblePos);
+
+    push(s, pos);
 
     if (possibleMoves > 1) {
         int c = pos.x * worldSize + pos.y;
@@ -490,6 +505,7 @@ void processWolf(world **oldBoard, world ***newBoard, int worldSize, position po
         destPos = possiblePos[0];
         destCell = &(*newBoard)[destPos.x][destPos.y];
     } else {
+        newCell->starvation_period++;
         return;
     }
 
