@@ -322,7 +322,7 @@ void moveSquirrel(world *oldCell, world *newCell, world *destCell) {
 
         destCell->breeding_period = 0;
     } else {
-         if (oldCell->type == SQUIRRELONTREE) {
+        if (oldCell->type == SQUIRRELONTREE) {
             newCell->type = TREE;
         } else if (oldCell->type == SQUIRREL) {
             newCell->type = EMPTY;
@@ -406,7 +406,7 @@ int canMove(world cell) {
     case SQUIRREL:
         return 2;
     case EMPTY:
-        return 1;;
+        return 1;
     default:
         return 0;
     }
