@@ -114,19 +114,14 @@ int main(int argc, char *argv[]) {
         debug("Unexpected number of input: %d\n", argc);
 
     wolfBreedingPeriod = atoi(argv[2]);
-    debug("Wolf breeding period: %d\n", wolfBreedingPeriod);
 
     squirrelBreedingPeriod = atoi(argv[3]);
-    debug("Squirrel breeding period: %d\n", squirrelBreedingPeriod);
 
     wolfStarvationPeriod = atoi(argv[4]);
-    debug("Wolf starvation period: %d\n", wolfStarvationPeriod);
 
-    debug("Reading from file: %s\n", argv[1]);
     readFile(argv[1], &readBoard, &writeBoard, &worldSize);
 
     numberOfGenerations = atoi(argv[5]);
-    debug("Number of generations: %d\n", numberOfGenerations);
 
     init(&updatedCells, worldSize * worldSize);
 
@@ -197,7 +192,6 @@ void readFile(char *path, world ***readBoard, world ***writeBoard, int *worldSiz
     if (fgets(line, 80, fr) != NULL) {
         int i, j;
         sscanf(line, "%d", worldSize);
-        debug("World size: %d\n", *worldSize);
 
         *readBoard = (world **) malloc(*worldSize * sizeof(world *));
         *writeBoard = (world **) malloc(*worldSize * sizeof(world *));
@@ -220,7 +214,6 @@ void readFile(char *path, world ***readBoard, world ***writeBoard, int *worldSiz
             char symbol;
 
             sscanf(line, "%d %d %c", &x, &y, &symbol);
-            debug("Read from file: %d %d %c\n", x, y, symbol);
 
             (*readBoard)[x][y].type = symbol;
             (*writeBoard)[x][y].type = symbol;

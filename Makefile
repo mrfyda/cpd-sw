@@ -1,4 +1,4 @@
-FLAGS   = -ansi -pedantic -Wall 
+FLAGS   = -ansi -pedantic -Wall -g
 CC      = gcc
 CFLAGS  = $(FLAGS) $(INCLUDE)
 LIBS    = 
