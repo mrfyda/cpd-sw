@@ -178,9 +178,9 @@ int main(int argc, char *argv[]) {
                 case WOLF:
                     /* Matem-me agora! */
                     if (readBoard[pos.x][pos.y].starvation_period >= wolfStarvationPeriod) {
-                    	readBoard[pos.x][pos.y].type = EMPTY;
-                    	readBoard[pos.x][pos.y].breeding_period = 0;
-                    	readBoard[pos.x][pos.y].starvation_period = 0;
+                        readBoard[pos.x][pos.y].type = EMPTY;
+                        readBoard[pos.x][pos.y].breeding_period = 0;
+                        readBoard[pos.x][pos.y].starvation_period = 0;
                     } else {
                         readBoard[pos.x][pos.y].breeding_period++;
                         readBoard[pos.x][pos.y].starvation_period++;
@@ -439,7 +439,7 @@ void moveWolf(world *oldCell, world *newCell, world *destCell) {
         destCell->starvation_period = oldCell->starvation_period;
         destCell->breeding_period = oldCell->breeding_period;
     }
-    
+
 
     if (oldCell->breeding_period >= wolfBreedingPeriod) {
         newCell->type = WOLF;
@@ -471,14 +471,11 @@ int calculateWolfMoves(world **oldBoard, world ***newBoard, int worldSize, posit
     /* RIGHT */
     if (pos.y + 1 < worldSize && (canMoveRes = canWolfMove(oldBoard[pos.x][pos.y + 1]))) {
         position p = pos;
-        if (canMoveRes == 2) {
-            if (!squirrelFound) {
+        if (!squirrelFound) {
+            if (canMoveRes == 2) {
                 squirrelFound = 1;
                 possibleMoves = 0;
             }
-            p.y += 1;
-            possiblePos[possibleMoves++] = p;
-        } else if (!squirrelFound) {
             p.y += 1;
             possiblePos[possibleMoves++] = p;
         }
@@ -487,14 +484,11 @@ int calculateWolfMoves(world **oldBoard, world ***newBoard, int worldSize, posit
     /* DOWN */
     if (pos.x + 1 < worldSize && (canMoveRes = canWolfMove(oldBoard[pos.x + 1][pos.y]))) {
         position p = pos;
-        if (canMoveRes == 2) {
-            if (!squirrelFound) {
+        if (!squirrelFound) {
+            if (canMoveRes == 2) {
                 squirrelFound = 1;
                 possibleMoves = 0;
             }
-            p.x += 1;
-            possiblePos[possibleMoves++] = p;
-        } else if (!squirrelFound) {
             p.x += 1;
             possiblePos[possibleMoves++] = p;
         }
@@ -503,14 +497,8 @@ int calculateWolfMoves(world **oldBoard, world ***newBoard, int worldSize, posit
     /* LEFT */
     if (pos.y - 1 > -1 && (canMoveRes = canWolfMove(oldBoard[pos.x][pos.y - 1]))) {
         position p = pos;
-        if (canMoveRes == 2) {
-            if (!squirrelFound) {
-                squirrelFound = 1;
-                possibleMoves = 0;
-            }
-            p.y -= 1;
-            possiblePos[possibleMoves++] = p;
-        } else if (!squirrelFound) {
+        if (!squirrelFound) {
+            if (canMoveRes == 2) possibleMoves = 0;
             p.y -= 1;
             possiblePos[possibleMoves++] = p;
         }
