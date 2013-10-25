@@ -167,6 +167,20 @@ int main(int argc, char *argv[]) {
             }
         }
 
+        for (pos.x = 0; pos.x < worldSize; pos.x++) {
+            for (pos.y = 0; pos.y < worldSize; pos.y++) {
+                switch (readBoard[pos.x][pos.y].type) {
+                case SQUIRRELONTREE:
+                case SQUIRREL:
+                case WOLF:
+                    readBoard[pos.x][pos.y].breeding_period++;
+                    readBoard[pos.x][pos.y].starvation_period++;
+                    debug("%d\n", readBoard[pos.x][pos.y].breeding_period);
+                    break;
+                }
+            }
+        }
+
         debug("Iteration %d Black\n", g + 1);
         debugBoard(readBoard, worldSize);
     }
@@ -298,12 +312,12 @@ void moveSquirrel(world *oldCell, world *newCell, world *destCell) {
         processConflictSameType(oldCell, destCell);
     } else if (destCell->type == TREE) {
         destCell->type = SQUIRRELONTREE;
-        destCell->starvation_period = oldCell->starvation_period + 1;
-        destCell->breeding_period = oldCell->breeding_period + 1;
+        destCell->starvation_period = oldCell->starvation_period;
+        destCell->breeding_period = oldCell->breeding_period;
     } else {
         destCell->type = SQUIRREL;
-        destCell->starvation_period = oldCell->starvation_period + 1;
-        destCell->breeding_period = oldCell->breeding_period + 1;
+        destCell->starvation_period = oldCell->starvation_period;
+        destCell->breeding_period = oldCell->breeding_period;
     }
 
     if (oldCell->breeding_period >= squirrelBreedingPeriod) {
@@ -313,7 +327,7 @@ void moveSquirrel(world *oldCell, world *newCell, world *destCell) {
             newCell->type = SQUIRREL;
         }
 
-        destCell->breeding_period = 0;
+        destCell->breeding_period = -1;
     } else {
         if (oldCell->type == SQUIRRELONTREE) {
             newCell->type = TREE;
@@ -380,7 +394,6 @@ void processSquirrel(world **oldBoard, world ***newBoard, int worldSize, positio
         destPos = possiblePos[0];
         destCell = &(*newBoard)[destPos.x][destPos.y];
     } else {
-        newCell->starvation_period++;
         return;
     }
 
@@ -412,14 +425,14 @@ void moveWolf(world *oldCell, world *newCell, world *destCell) {
         processConflict(oldCell, destCell);
     } else if ((oldCell->starvation_period + 1) < wolfStarvationPeriod) {
         destCell->type = WOLF;
-        destCell->starvation_period = oldCell->starvation_period + 1;
-        destCell->breeding_period = oldCell->breeding_period + 1;
+        destCell->starvation_period = oldCell->starvation_period;
+        destCell->breeding_period = oldCell->breeding_period;
     }
 
     if (oldCell->breeding_period >= wolfBreedingPeriod) {
         newCell->type = WOLF;
 
-        destCell->breeding_period = 0;
+        destCell->breeding_period = -1;
     } else {
         newCell->type = EMPTY;
     }
