@@ -129,18 +129,6 @@ int main(int argc, char *argv[]) {
 
     /* process each generation */
     for (g = 0; g < numberOfGenerations; g++) {
-    	 for (pos.x = 0; pos.x < worldSize; pos.x++) {
-            for (pos.y = 0; pos.y < worldSize; pos.y++) {
-                switch (readBoard[pos.x][pos.y].type) {
-                case SQUIRRELONTREE:
-                case SQUIRREL:
-                case WOLF:
-                    debug("BP[%d][%d] %d\n", pos.x, pos.y, readBoard[pos.x][pos.y].breeding_period);
-                    debug("SP[%d][%d] %d\n", pos.x, pos.y, readBoard[pos.x][pos.y].starvation_period);
-                    break;
-                }
-            }
-        }
         /* process first sub generation */
         for (pos.x = 0; pos.x < worldSize; pos.x++) {
             for (pos.y = pos.x % 2; pos.y < worldSize; pos.y += 2) {
