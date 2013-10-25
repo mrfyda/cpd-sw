@@ -173,6 +173,7 @@ int main(int argc, char *argv[]) {
                 case SQUIRRELONTREE:
                 case SQUIRREL:
                 case WOLF:
+                    /* Matem-me agora! */
                     readBoard[pos.x][pos.y].breeding_period++;
                     readBoard[pos.x][pos.y].starvation_period++;
                     debug("%d\n", readBoard[pos.x][pos.y].breeding_period);
@@ -428,6 +429,7 @@ void moveWolf(world *oldCell, world *newCell, world *destCell) {
         destCell->starvation_period = oldCell->starvation_period;
         destCell->breeding_period = oldCell->breeding_period;
     }
+    /* Não quero morrer já! */
 
     if (oldCell->breeding_period >= wolfBreedingPeriod) {
         newCell->type = WOLF;
