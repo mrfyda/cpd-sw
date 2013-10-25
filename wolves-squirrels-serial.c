@@ -534,16 +534,15 @@ void processWolf(world **oldBoard, world ***newBoard, int worldSize, position po
         int c = pos.x * worldSize + pos.y;
         destPos = possiblePos[c % possibleMoves];
         destCell = &(*newBoard)[destPos.x][destPos.y];
-        push(s, pos);
     } else if (possibleMoves == 1) {
         destPos = possiblePos[0];
         destCell = &(*newBoard)[destPos.x][destPos.y];
-        push(s, pos);
     } else {
         return;
     }
 
     moveWolf(oldCell, newCell, destCell);
+    push(s, pos);
     push(s, destPos);
 }
 /*********************************************Wolf Rules End*********************************************/
