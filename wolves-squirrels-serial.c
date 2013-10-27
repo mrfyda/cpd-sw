@@ -117,7 +117,6 @@ int main(int argc, const char *argv[]) {
 
     readFile(argv[1], &readBoard, &writeBoard, &worldSize);
 
-    omp_set_num_threads(2);
     start = omp_get_wtime();
     #pragma omp parallel private(pos, updatedCells)
     {
@@ -132,7 +131,6 @@ int main(int argc, const char *argv[]) {
 
         debugBoard(readBoard, worldSize);
 
-        start = omp_get_wtime();
         /* process each generation */
         for (g = 0; g < numberOfGenerations; g++) {
             /* process first sub generation */
@@ -167,7 +165,11 @@ int main(int argc, const char *argv[]) {
             }
 
             /* process second sub generation */
+<<<<<<< HEAD
             #pragma omp for schedule(static, 1) private(x, y)
+=======
+            #pragma omp for schedule(static, 1) private(x,y)
+>>>>>>> parallel
             for (x = 0; x < worldSize; x++) {
                 for (y = 1 - (x % 2); y < worldSize; y += 2) {
                     pos.x = x;
@@ -193,7 +195,11 @@ int main(int argc, const char *argv[]) {
                 debug("Iteration %d Black\n", g + 1);
                 debugBoard(readBoard, worldSize);
             }
+<<<<<<< HEAD
             #pragma omp for private(x, y)
+=======
+            #pragma omp for private(x,y)
+>>>>>>> parallel
             for (x = 0; x < worldSize; x++) {
                 for (y = 0; y < worldSize; y++) {
                     pos.x = x;
