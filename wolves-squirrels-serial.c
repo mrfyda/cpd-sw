@@ -34,37 +34,39 @@ void debug(const char *format, ...) {
     Stack
 */
 
+struct node {
+    position data;
+    struct node *link;
+};
+
 typedef struct {
-    position *data;
-    int size;
-    int maxSize;
+    struct node *head;
+    struct node *list_node;
 } stack;
 
-void init(stack *s, int maxSize) {
-    s->data = (position *) malloc(maxSize * sizeof(position));
-    s->size = 0;
-    s->maxSize = maxSize;
+void init(stack *s) {
+    s->head = NULL;
+    s->list_node = NULL;
 }
 
 void push(stack *s, position p) {
-    if (s->size < s->maxSize) {
-        s->data[s->size++] = p;
-    } else {
-        debug("stack is full\n");
-    }
+    s->list_node = malloc(sizeof(struct node));
+    s->list_node->data = p;
+    s->list_node->link = s->head;
+    s->head = s->list_node;
 }
 
 position pop(stack *s) {
-    if (s->size == 0) {
+    position tmp;
+    if (s->head == NULL) {
         position p = { -1, -1 };
         return p;
     }
-
-    return s->data[--s->size];
-}
-
-void destroy(stack *s) {
-    free(s->data);
+    tmp = s->head->data;
+    s->list_node = s->head;
+    s->head = s->head->link;
+    free(s->list_node);
+    return tmp;
 }
 
 /*
@@ -123,7 +125,7 @@ int main(int argc, char *argv[]) {
 
     numberOfGenerations = atoi(argv[5]);
 
-    init(&updatedCells, worldSize * worldSize);
+    init(&updatedCells);
 
     debugBoard(readBoard, worldSize);
 
@@ -202,8 +204,6 @@ int main(int argc, char *argv[]) {
     }
     free(readBoard);
     free(writeBoard);
-
-    destroy(&updatedCells);
 
     return 0;
 }
