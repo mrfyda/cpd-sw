@@ -395,8 +395,6 @@ void processSquirrel(world **oldBoard, world ***newBoard, int worldSize, positio
 
     possibleMoves = calculateSquirrelMoves(oldBoard, worldSize, pos, possiblePos);
 
-    push(s, pos);
-
     if (possibleMoves > 1) {
         int c = pos.x * worldSize + pos.y;
         destPos = possiblePos[c % possibleMoves];
@@ -409,6 +407,7 @@ void processSquirrel(world **oldBoard, world ***newBoard, int worldSize, positio
     }
 
     moveSquirrel(oldCell, newCell, destCell);
+    push(s, pos);
     push(s, destPos);
 }
 /*******************************************Squirrel Rules End*******************************************/
@@ -516,7 +515,6 @@ void processWolf(world **oldBoard, world ***newBoard, int worldSize, position po
     newCell = &(*newBoard)[pos.x][pos.y];
 
     possibleMoves = calculateWolfMoves(oldBoard, newBoard, worldSize, pos, possiblePos);
-
 
     if (possibleMoves > 1) {
         int c = pos.x * worldSize + pos.y;
