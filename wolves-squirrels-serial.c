@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <omp.h>
 
 /*
     Utils
@@ -108,7 +109,6 @@ int main(int argc, char *argv[]) {
     int numberOfGenerations;
     int worldSize;
     world **readBoard = NULL, **writeBoard = NULL;
-    int g;
     position pos;
     stack updatedCells;
 
@@ -125,75 +125,99 @@ int main(int argc, char *argv[]) {
 
     numberOfGenerations = atoi(argv[5]);
 
-    init(&updatedCells);
-
     debugBoard(readBoard, worldSize);
 
-    /* process each generation */
-    for (g = 0; g < numberOfGenerations; g++) {
-        /* process first sub generation */
-        for (pos.x = 0; pos.x < worldSize; pos.x++) {
-            for (pos.y = pos.x % 2; pos.y < worldSize; pos.y += 2) {
-                processCell(readBoard, &writeBoard, worldSize, pos, &updatedCells);
-            }
-        }
+    #pragma omp parallel private(updatedCells, g, pos)
+    {
+        int g;
+        init(&updatedCells);
 
-        /* copy updated cells to readBoard */
-        while (1) {
-            pos = pop(&updatedCells);
-            if  (pos.x == -1) {
-                break;
-            } else {
-                readBoard[pos.x][pos.y] = writeBoard[pos.x][pos.y];
+        /* process each generation */
+        for (g = 0; g < numberOfGenerations; g++) {
+            /* process first sub generation */
+            int x, y;
+            #pragma omp for schedule(static, 1) private(x,y)
+            for (x = 0; x < worldSize; x++) {
+                for (y = x % 2; y < worldSize; y += 2) {
+                    pos.x = x;
+                    pos.y = y;
+                    processCell(readBoard, &writeBoard, worldSize, pos, &updatedCells);
+                }
             }
-        }
-        debug("\n");
-        debug("Iteration %d Red\n", g + 1);
-        debugBoard(readBoard, worldSize);
-        debug("\n");
 
-        /* process second sub generation */
-        for (pos.x = 0; pos.x < worldSize; pos.x++) {
-            for (pos.y = 1 - (pos.x % 2); pos.y < worldSize; pos.y += 2) {
-                processCell(readBoard, &writeBoard, worldSize, pos, &updatedCells);
-            }
-        }
-
-        /* copy updated cells to readBoard */
-        while (1) {
-            pos = pop(&updatedCells);
-            if  (pos.x == -1) {
-                break;
-            } else {
-                readBoard[pos.x][pos.y] = writeBoard[pos.x][pos.y];
-            }
-        }
-
-        for (pos.x = 0; pos.x < worldSize; pos.x++) {
-            for (pos.y = 0; pos.y < worldSize; pos.y++) {
-                switch (readBoard[pos.x][pos.y].type) {
-                case SQUIRRELONTREE:
-                case SQUIRREL:
-                    readBoard[pos.x][pos.y].breeding_period++;
-                    readBoard[pos.x][pos.y].starvation_period++;
+            /* copy updated cells to readBoard */
+            while (1) {
+                pos = pop(&updatedCells);
+                if  (pos.x == -1) {
                     break;
-                case WOLF:
-                    /* Matem-me agora! */
-                    if (readBoard[pos.x][pos.y].starvation_period >= wolfStarvationPeriod) {
-                        readBoard[pos.x][pos.y].type = EMPTY;
-                        readBoard[pos.x][pos.y].breeding_period = 0;
-                        readBoard[pos.x][pos.y].starvation_period = 0;
-                    } else {
+                } else {
+                    readBoard[pos.x][pos.y] = writeBoard[pos.x][pos.y];
+                }
+            }
+
+            #pragma omp barrier
+            #pragma omp single
+            {
+                debug("\n");
+                debug("Iteration %d Red\n", g + 1);
+                debugBoard(readBoard, worldSize);
+                debug("\n");
+
+            }
+
+            /* process second sub generation */
+            #pragma omp for schedule(static, 1) private(x,y)
+            for (x = 0; x < worldSize; x++) {
+                for (y = 1 - (x % 2); y < worldSize; y += 2) {
+                    pos.x = x;
+                    pos.y = y;
+                    processCell(readBoard, &writeBoard, worldSize, pos, &updatedCells);
+                }
+            }
+
+            /* copy updated cells to readBoard */
+            while (1) {
+                pos = pop(&updatedCells);
+                if  (pos.x == -1) {
+                    break;
+                } else {
+                    readBoard[pos.x][pos.y] = writeBoard[pos.x][pos.y];
+                }
+            }
+
+            #pragma omp barrier
+            #pragma omp single
+            {
+
+                debug("Iteration %d Black\n", g + 1);
+                debugBoard(readBoard, worldSize);
+            }
+            #pragma omp for private(x,y)
+            for (x = 0; x < worldSize; x++) {
+                for (y = 0; y < worldSize; y++) {
+                    pos.x = x;
+                    pos.y = y;
+                    switch (readBoard[pos.x][pos.y].type) {
+                    case SQUIRRELONTREE:
+                    case SQUIRREL:
                         readBoard[pos.x][pos.y].breeding_period++;
                         readBoard[pos.x][pos.y].starvation_period++;
+                        break;
+                    case WOLF:
+                        /* Matem-me agora! */
+                        if (readBoard[pos.x][pos.y].starvation_period >= wolfStarvationPeriod) {
+                            readBoard[pos.x][pos.y].type = EMPTY;
+                            readBoard[pos.x][pos.y].breeding_period = 0;
+                            readBoard[pos.x][pos.y].starvation_period = 0;
+                        } else {
+                            readBoard[pos.x][pos.y].breeding_period++;
+                            readBoard[pos.x][pos.y].starvation_period++;
+                        }
+                        break;
                     }
-                    break;
                 }
             }
         }
-
-        debug("Iteration %d Black\n", g + 1);
-        debugBoard(readBoard, worldSize);
     }
 
     printBoardList(readBoard, worldSize);
