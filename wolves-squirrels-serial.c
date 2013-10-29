@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <omp.h>
 
 /*
     Utils
@@ -111,6 +112,7 @@ int main(int argc, char *argv[]) {
     int g;
     position pos;
     stack updatedCells;
+    int start, end;
 
     if (argc != 6)
         debug("Unexpected number of input: %d\n", argc);
@@ -129,6 +131,7 @@ int main(int argc, char *argv[]) {
 
     debugBoard(readBoard, worldSize);
 
+    start = omp_get_wtime();
     /* process each generation */
     for (g = 0; g < numberOfGenerations; g++) {
         /* process first sub generation */
@@ -195,6 +198,7 @@ int main(int argc, char *argv[]) {
         debug("Iteration %d Black\n", g + 1);
         debugBoard(readBoard, worldSize);
     }
+    end = omp_get_wtime();
 
     printBoardList(readBoard, worldSize);
 
@@ -204,6 +208,9 @@ int main(int argc, char *argv[]) {
     }
     free(readBoard);
     free(writeBoard);
+
+    printf("TIME: %d\n", end - start);
+    fflush(stdout);
 
     return 0;
 }

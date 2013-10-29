@@ -1,4 +1,4 @@
-FLAGS   = -ansi -pedantic -Wall -g
+FLAGS   = -fopenmp -ansi -pedantic -Wall -g
 CC      = gcc
 CFLAGS  = $(FLAGS) $(INCLUDE)
 LIBS    = 
@@ -26,4 +26,4 @@ run:
 	./bin/wolves-squirrels-serial tests/ex3.in 3 4 4 4
 
 test:
-	./bin/wolves-squirrels-serial tests/t1.in 7 14 22 1000
+	./bin/wolves-squirrels-serial tests/t2.in 20 50 50 1000
