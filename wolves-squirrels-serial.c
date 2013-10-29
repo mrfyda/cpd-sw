@@ -461,7 +461,7 @@ void moveWolf(world *oldCell, world *newCell, world *destCell) {
     newCell->starvation_period = 0;
 }
 
-int calculateWolfMoves(world **oldBoard, world ***newBoard, int worldSize, position pos, position *possiblePos) {
+int calculateWolfMoves(world **oldBoard, int worldSize, position pos, position *possiblePos) {
     int possibleMoves = 0;
     int squirrelFound = 0;
     int canMoveRes;
@@ -521,7 +521,7 @@ void processWolf(world **oldBoard, world ***newBoard, int worldSize, position po
     oldCell = &oldBoard[pos.x][pos.y];
     newCell = &(*newBoard)[pos.x][pos.y];
 
-    possibleMoves = calculateWolfMoves(oldBoard, newBoard, worldSize, pos, possiblePos);
+    possibleMoves = calculateWolfMoves(oldBoard, worldSize, pos, possiblePos);
 
     if (possibleMoves > 1) {
         int c = pos.x * worldSize + pos.y;
