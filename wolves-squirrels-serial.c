@@ -110,6 +110,7 @@ int main(int argc, const char *argv[]) {
     world **readBoard = NULL, **writeBoard = NULL;
     position pos;
     stack updatedCells;
+    int start, end;
 
     if (argc != 6)
         debug("Unexpected number of input: %d\n", argc);
@@ -117,6 +118,7 @@ int main(int argc, const char *argv[]) {
     readFile(argv[1], &readBoard, &writeBoard, &worldSize);
 
     omp_set_num_threads(2);
+    start = omp_get_wtime();
     #pragma omp parallel private(pos, updatedCells)
     {
         int g;
@@ -217,6 +219,7 @@ int main(int argc, const char *argv[]) {
             }
         }
     }
+    end = omp_get_wtime();
 
     printBoardList(readBoard, worldSize);
 
@@ -226,6 +229,9 @@ int main(int argc, const char *argv[]) {
     }
     free(readBoard);
     free(writeBoard);
+
+    printf("TIME: %d\n", end - start);
+    fflush(stdout);
 
     return 0;
 }
