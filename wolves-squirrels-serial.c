@@ -11,7 +11,7 @@
     Utils
 */
 
-#define DEBUG 1
+#define DEBUG 0
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 
 typedef struct {
@@ -89,7 +89,7 @@ typedef struct {
     int starvation_period;
 } world;
 
-void readFile(char *path, world ***readBoard, world ***writeBoard, int *worldSize);
+void readFile(const char *path, world ***readBoard, world ***writeBoard, int *worldSize);
 void debugBoard(world **board, int worldSize);
 void debug(const char *format, ...);
 void printBoardList(world **board, int worldSize);
@@ -105,8 +105,7 @@ int squirrelBreedingPeriod;
 int wolfStarvationPeriod;
 
 
-int main(int argc, char *argv[]) {
-    int numberOfGenerations;
+int main(int argc, const char *argv[]) {
     int worldSize;
     world **readBoard = NULL, **writeBoard = NULL;
     position pos;
@@ -115,28 +114,26 @@ int main(int argc, char *argv[]) {
     if (argc != 6)
         debug("Unexpected number of input: %d\n", argc);
 
-    wolfBreedingPeriod = atoi(argv[2]);
-
-    squirrelBreedingPeriod = atoi(argv[3]);
-
-    wolfStarvationPeriod = atoi(argv[4]);
-
     readFile(argv[1], &readBoard, &writeBoard, &worldSize);
 
-    numberOfGenerations = atoi(argv[5]);
-
-    debugBoard(readBoard, worldSize);
-
-    #pragma omp parallel private(updatedCells, g, pos)
+    #pragma omp parallel private(pos, updatedCells)
     {
         int g;
+        int numberOfGenerations;
+
+        wolfBreedingPeriod = atoi(argv[2]);
+        squirrelBreedingPeriod = atoi(argv[3]);
+        wolfStarvationPeriod = atoi(argv[4]);
+        numberOfGenerations = atoi(argv[5]);
         init(&updatedCells);
+
+        debugBoard(readBoard, worldSize);
 
         /* process each generation */
         for (g = 0; g < numberOfGenerations; g++) {
             /* process first sub generation */
             int x, y;
-            #pragma omp for schedule(static, 1) private(x,y)
+            #pragma omp for schedule(static, 1) private(x, y)
             for (x = 0; x < worldSize; x++) {
                 for (y = x % 2; y < worldSize; y += 2) {
                     pos.x = x;
@@ -166,7 +163,7 @@ int main(int argc, char *argv[]) {
             }
 
             /* process second sub generation */
-            #pragma omp for schedule(static, 1) private(x,y)
+            #pragma omp for schedule(static, 1) private(x, y)
             for (x = 0; x < worldSize; x++) {
                 for (y = 1 - (x % 2); y < worldSize; y += 2) {
                     pos.x = x;
@@ -192,7 +189,7 @@ int main(int argc, char *argv[]) {
                 debug("Iteration %d Black\n", g + 1);
                 debugBoard(readBoard, worldSize);
             }
-            #pragma omp for private(x,y)
+            #pragma omp for private(x, y)
             for (x = 0; x < worldSize; x++) {
                 for (y = 0; y < worldSize; y++) {
                     pos.x = x;
@@ -232,7 +229,7 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-void readFile(char *path, world ***readBoard, world ***writeBoard, int *worldSize) {
+void readFile(const char *path, world ***readBoard, world ***writeBoard, int *worldSize) {
     char line[80];
     FILE *fr = fopen (path, "rt");
 
@@ -271,20 +268,22 @@ void readFile(char *path, world ***readBoard, world ***writeBoard, int *worldSiz
 }
 
 void debugBoard(world **board, int worldSize) {
-    int i, j;
-    debug("---------------------------------\n   ");
-    for (i = 0; i < worldSize; i++) {
-        debug("%02d|", i);
-    }
-    debug("\n");
-    for (i = 0; i < worldSize; i++) {
-        debug("%02d: ", i);
-        for (j = 0; j < worldSize; j++) {
-            debug("%1c| ", board[i][j].type);
+    if (DEBUG) {
+        int i, j;
+        debug("---------------------------------\n   ");
+        for (i = 0; i < worldSize; i++) {
+            debug("%02d|", i);
         }
         debug("\n");
+        for (i = 0; i < worldSize; i++) {
+            debug("%02d: ", i);
+            for (j = 0; j < worldSize; j++) {
+                debug("%1c| ", board[i][j].type);
+            }
+            debug("\n");
+        }
+        debug("---------------------------------\n");
     }
-    debug("---------------------------------\n");
 }
 
 void printBoardList(world **board, int worldSize) {
