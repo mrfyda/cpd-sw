@@ -10,7 +10,7 @@
     Utils
 */
 
-#define DEBUG 1
+#define DEBUG 0
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 
 typedef struct {

@@ -23,4 +23,4 @@ clean:
 	@rm -rf *.a *.o wolves-squirrels-serial
 
 run:
-	./bin/wolves-squirrels-serial tests/ex3.in 3 4 4 4
+	./bin/wolves-squirrels-serial tests/t1.in 7 14 22 500
