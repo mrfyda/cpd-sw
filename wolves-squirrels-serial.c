@@ -132,6 +132,7 @@ int main(int argc, const char *argv[]) {
 
         debugBoard(readBoard, worldSize);
 
+        start = omp_get_wtime();
         /* process each generation */
         for (g = 0; g < numberOfGenerations; g++) {
             /* process first sub generation */
