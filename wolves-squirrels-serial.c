@@ -191,15 +191,7 @@ int main(int argc, const char *argv[]) {
                 debug("Iteration %d Black\n", g + 1);
                 debugBoard(readBoard, worldSize);
             }
-<<<<<<< HEAD
-<<<<<<< HEAD
             #pragma omp for private(x, y)
-=======
-            #pragma omp for private(x,y)
->>>>>>> parallel
-=======
-            #pragma omp for private(x, y)
->>>>>>> make more private
             for (x = 0; x < worldSize; x++) {
                 for (y = 0; y < worldSize; y++) {
                     pos.x = x;
