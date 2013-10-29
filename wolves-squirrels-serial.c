@@ -165,11 +165,7 @@ int main(int argc, const char *argv[]) {
             }
 
             /* process second sub generation */
-<<<<<<< HEAD
             #pragma omp for schedule(static, 1) private(x, y)
-=======
-            #pragma omp for schedule(static, 1) private(x,y)
->>>>>>> parallel
             for (x = 0; x < worldSize; x++) {
                 for (y = 1 - (x % 2); y < worldSize; y += 2) {
                     pos.x = x;
@@ -196,10 +192,14 @@ int main(int argc, const char *argv[]) {
                 debugBoard(readBoard, worldSize);
             }
 <<<<<<< HEAD
+<<<<<<< HEAD
             #pragma omp for private(x, y)
 =======
             #pragma omp for private(x,y)
 >>>>>>> parallel
+=======
+            #pragma omp for private(x, y)
+>>>>>>> make more private
             for (x = 0; x < worldSize; x++) {
                 for (y = 0; y < worldSize; y++) {
                     pos.x = x;
