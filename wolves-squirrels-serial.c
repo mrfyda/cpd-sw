@@ -116,6 +116,7 @@ int main(int argc, const char *argv[]) {
 
     readFile(argv[1], &readBoard, &writeBoard, &worldSize);
 
+    omp_set_num_threads(2);
     #pragma omp parallel private(pos, updatedCells)
     {
         int g;
