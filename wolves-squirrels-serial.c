@@ -435,7 +435,9 @@ void processSquirrel(world **oldBoard, world ***newBoard, int worldSize, positio
         return;
     }
 
+    #pragma omp critical(move)
     moveSquirrel(oldCell, newCell, destCell);
+
     push(s, pos);
     push(s, destPos);
 }
@@ -556,7 +558,9 @@ void processWolf(world **oldBoard, world ***newBoard, int worldSize, position po
         return;
     }
 
+    #pragma omp critical(move)
     moveWolf(oldCell, newCell, destCell);
+
     push(s, pos);
     push(s, destPos);
 }
