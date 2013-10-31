@@ -78,16 +78,13 @@ int main(int argc, char *argv[]) {
     if (argc != 6)
         debug("Unexpected number of input: %d\n", argc);
 
-    wolfBreedingPeriod = atoi(argv[2]);
-
-    squirrelBreedingPeriod = atoi(argv[3]);
-
-    wolfStarvationPeriod = atoi(argv[4]);
-
     start = omp_get_wtime();
     
     readFile(argv[1], &readBoard, &writeBoard, &worldSize);
-
+    
+    wolfBreedingPeriod = atoi(argv[2]);
+    squirrelBreedingPeriod = atoi(argv[3]);
+    wolfStarvationPeriod = atoi(argv[4]);
     numberOfGenerations = atoi(argv[5]);
 
     debugBoard(readBoard, worldSize);
@@ -282,6 +279,8 @@ int canSquirrelMove(world cell) {
 void moveSquirrel(world *oldCell, world *newCell, world *destCell) {
     if (destCell->type == SQUIRREL || destCell->type == SQUIRRELONTREE) {
         processConflictSameType(oldCell, destCell);
+    } else if (destCell->type == WOLF) {
+        processConflict(oldCell, destCell);
     } else if (destCell->type == TREE) {
         destCell->type = SQUIRRELONTREE;
         destCell->starvation_period = oldCell->starvation_period;
