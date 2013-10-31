@@ -32,45 +32,6 @@ void debug(const char *format, ...) {
 }
 
 /*
-    Stack
-*/
-
-struct node {
-    position data;
-    struct node *link;
-};
-
-typedef struct {
-    struct node *head;
-    struct node *list_node;
-} stack;
-
-void init(stack *s) {
-    s->head = NULL;
-    s->list_node = NULL;
-}
-
-void push(stack *s, position p) {
-    s->list_node = malloc(sizeof(struct node));
-    s->list_node->data = p;
-    s->list_node->link = s->head;
-    s->head = s->list_node;
-}
-
-position pop(stack *s) {
-    position tmp;
-    if (s->head == NULL) {
-        position p = { -1, -1 };
-        return p;
-    }
-    tmp = s->head->data;
-    s->list_node = s->head;
-    s->head = s->head->link;
-    free(s->list_node);
-    return tmp;
-}
-
-/*
     Wolves & Squirrels
 */
 
@@ -93,11 +54,11 @@ void readFile(char *path, world ***readBoard, world ***writeBoard, int *worldSiz
 void debugBoard(world **board, int worldSize);
 void debug(const char *format, ...);
 void printBoardList(world **board, int worldSize);
-void processSquirrel(world **oldBoard, world ***newBoard, int worldSize, position pos, stack *s);
-void processWolf(world **oldBoard, world ***newBoard, int worldSize, position pos, stack *s);
+void processSquirrel(world **oldBoard, world ***newBoard, int worldSize, position pos);
+void processWolf(world **oldBoard, world ***newBoard, int worldSize, position pos);
 void processConflictSameType(world *currentCell, world *newCell);
 void processConflict(world *currentCell, world *newCell);
-void processCell(world **readBoard, world ***writeBoard, int worldSize, position pos, stack *s);
+void processCell(world **readBoard, world ***writeBoard, int worldSize, position pos);
 
 
 int wolfBreedingPeriod;
@@ -111,8 +72,8 @@ int main(int argc, char *argv[]) {
     world **readBoard = NULL, **writeBoard = NULL;
     int g;
     position pos;
-    stack updatedCells;
     int start, end;
+    int x, y;
 
     if (argc != 6)
         debug("Unexpected number of input: %d\n", argc);
@@ -123,33 +84,30 @@ int main(int argc, char *argv[]) {
 
     wolfStarvationPeriod = atoi(argv[4]);
 
+    start = omp_get_wtime();
+    
     readFile(argv[1], &readBoard, &writeBoard, &worldSize);
 
     numberOfGenerations = atoi(argv[5]);
 
-    init(&updatedCells);
-
     debugBoard(readBoard, worldSize);
 
-    start = omp_get_wtime();
     /* process each generation */
     for (g = 0; g < numberOfGenerations; g++) {
         /* process first sub generation */
         for (pos.x = 0; pos.x < worldSize; pos.x++) {
             for (pos.y = pos.x % 2; pos.y < worldSize; pos.y += 2) {
-                processCell(readBoard, &writeBoard, worldSize, pos, &updatedCells);
+                processCell(readBoard, &writeBoard, worldSize, pos);
             }
         }
 
         /* copy updated cells to readBoard */
-        while (1) {
-            pos = pop(&updatedCells);
-            if  (pos.x == -1) {
-                break;
-            } else {
-                readBoard[pos.x][pos.y] = writeBoard[pos.x][pos.y];
+        for (x = 0; x < worldSize; x++) {
+            for (y = 0; y < worldSize; y++) {
+                readBoard[x][y] = writeBoard[x][y];
             }
         }
+        
         debug("\n");
         debug("Iteration %d Red\n", g + 1);
         debugBoard(readBoard, worldSize);
@@ -158,17 +116,14 @@ int main(int argc, char *argv[]) {
         /* process second sub generation */
         for (pos.x = 0; pos.x < worldSize; pos.x++) {
             for (pos.y = 1 - (pos.x % 2); pos.y < worldSize; pos.y += 2) {
-                processCell(readBoard, &writeBoard, worldSize, pos, &updatedCells);
+                processCell(readBoard, &writeBoard, worldSize, pos);
             }
         }
 
         /* copy updated cells to readBoard */
-        while (1) {
-            pos = pop(&updatedCells);
-            if  (pos.x == -1) {
-                break;
-            } else {
-                readBoard[pos.x][pos.y] = writeBoard[pos.x][pos.y];
+        for (x = 0; x < worldSize; x++) {
+            for (y = 0; y < worldSize; y++) {
+                readBoard[x][y] = writeBoard[x][y];
             }
         }
 
@@ -198,10 +153,11 @@ int main(int argc, char *argv[]) {
         debug("Iteration %d Black\n", g + 1);
         debugBoard(readBoard, worldSize);
     }
-    end = omp_get_wtime();
 
     printBoardList(readBoard, worldSize);
 
+    end = omp_get_wtime();
+    
     for (pos.x = 0; pos.x < worldSize; pos.x++) {
         free(readBoard[pos.x]);
         free(writeBoard[pos.x]);
@@ -282,14 +238,14 @@ void printBoardList(world **board, int worldSize) {
     }
 }
 
-void processCell(world **readBoard, world ***writeBoard, int worldSize, position pos, stack *s) {
+void processCell(world **readBoard, world ***writeBoard, int worldSize, position pos) {
     switch (readBoard[pos.x][pos.y].type) {
     case SQUIRRELONTREE:
     case SQUIRREL:
-        processSquirrel(readBoard, writeBoard, worldSize, pos, s);
+        processSquirrel(readBoard, writeBoard, worldSize, pos);
         break;
     case WOLF:
-        processWolf(readBoard, writeBoard, worldSize, pos, s);
+        processWolf(readBoard, writeBoard, worldSize, pos);
         break;
     }
 }
@@ -392,7 +348,7 @@ int calculateSquirrelMoves(world **oldBoard, int worldSize, position pos, positi
     return possibleMoves;
 }
 
-void processSquirrel(world **oldBoard, world ***newBoard, int worldSize, position pos, stack *s) {
+void processSquirrel(world **oldBoard, world ***newBoard, int worldSize, position pos) {
     int possibleMoves;
     position destPos, possiblePos[MOVES];
     world *oldCell, *newCell, *destCell;
@@ -414,8 +370,6 @@ void processSquirrel(world **oldBoard, world ***newBoard, int worldSize, positio
     }
 
     moveSquirrel(oldCell, newCell, destCell);
-    push(s, pos);
-    push(s, destPos);
 }
 /*******************************************Squirrel Rules End*******************************************/
 /********************************************************************************************************/
@@ -513,7 +467,7 @@ int calculateWolfMoves(world **oldBoard, int worldSize, position pos, position *
     return possibleMoves;
 }
 
-void processWolf(world **oldBoard, world ***newBoard, int worldSize, position pos, stack *s) {
+void processWolf(world **oldBoard, world ***newBoard, int worldSize, position pos) {
     int possibleMoves;
     position destPos, possiblePos[MOVES];
     world *oldCell, *newCell, *destCell;
@@ -535,8 +489,6 @@ void processWolf(world **oldBoard, world ***newBoard, int worldSize, position po
     }
 
     moveWolf(oldCell, newCell, destCell);
-    push(s, pos);
-    push(s, destPos);
 }
 /*********************************************Wolf Rules End*********************************************/
 /********************************************************************************************************/
