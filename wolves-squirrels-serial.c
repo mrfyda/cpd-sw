@@ -50,7 +50,7 @@ typedef struct {
     int starvation_period;
 } world;
 
-void readFile(char *path, world ***readBoard, world ***writeBoard, int *worldSize);
+void readFile(const char *path, world ***readBoard, world ***writeBoard, int *worldSize);
 void debugBoard(world **board, int worldSize);
 void debug(const char *format, ...);
 void printBoardList(world **board, int worldSize);
@@ -66,14 +66,13 @@ int squirrelBreedingPeriod;
 int wolfStarvationPeriod;
 
 
-int main(int argc, char *argv[]) {
-    int numberOfGenerations;
+int main(int argc, const char *argv[]) {
     int worldSize;
     world **readBoard = NULL, **writeBoard = NULL;
     int g;
     position pos;
     int start, end;
-    int x, y;
+    int numberOfGenerations;
 
     if (argc != 6)
         debug("Unexpected number of input: %d\n", argc);
@@ -81,7 +80,7 @@ int main(int argc, char *argv[]) {
     start = omp_get_wtime();
     
     readFile(argv[1], &readBoard, &writeBoard, &worldSize);
-    
+
     wolfBreedingPeriod = atoi(argv[2]);
     squirrelBreedingPeriod = atoi(argv[3]);
     wolfStarvationPeriod = atoi(argv[4]);
@@ -92,6 +91,7 @@ int main(int argc, char *argv[]) {
     /* process each generation */
     for (g = 0; g < numberOfGenerations; g++) {
         /* process first sub generation */
+        int x, y;
         for (pos.x = 0; pos.x < worldSize; pos.x++) {
             for (pos.y = pos.x % 2; pos.y < worldSize; pos.y += 2) {
                 processCell(readBoard, &writeBoard, worldSize, pos);
@@ -154,7 +154,7 @@ int main(int argc, char *argv[]) {
     printBoardList(readBoard, worldSize);
 
     end = omp_get_wtime();
-    
+
     for (pos.x = 0; pos.x < worldSize; pos.x++) {
         free(readBoard[pos.x]);
         free(writeBoard[pos.x]);
@@ -168,7 +168,7 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-void readFile(char *path, world ***readBoard, world ***writeBoard, int *worldSize) {
+void readFile(const char *path, world ***readBoard, world ***writeBoard, int *worldSize) {
     char line[80];
     FILE *fr = fopen (path, "rt");
 
@@ -207,20 +207,22 @@ void readFile(char *path, world ***readBoard, world ***writeBoard, int *worldSiz
 }
 
 void debugBoard(world **board, int worldSize) {
-    int i, j;
-    debug("---------------------------------\n   ");
-    for (i = 0; i < worldSize; i++) {
-        debug("%02d|", i);
-    }
-    debug("\n");
-    for (i = 0; i < worldSize; i++) {
-        debug("%02d: ", i);
-        for (j = 0; j < worldSize; j++) {
-            debug("%1c| ", board[i][j].type);
+    if (DEBUG) {
+        int i, j;
+        debug("---------------------------------\n   ");
+        for (i = 0; i < worldSize; i++) {
+            debug("%02d|", i);
         }
         debug("\n");
+        for (i = 0; i < worldSize; i++) {
+            debug("%02d: ", i);
+            for (j = 0; j < worldSize; j++) {
+                debug("%1c| ", board[i][j].type);
+            }
+            debug("\n");
+        }
+        debug("---------------------------------\n");
     }
-    debug("---------------------------------\n");
 }
 
 void printBoardList(world **board, int worldSize) {
