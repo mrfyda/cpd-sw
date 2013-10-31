@@ -78,7 +78,7 @@ int main(int argc, const char *argv[]) {
         debug("Unexpected number of input: %d\n", argc);
 
     start = omp_get_wtime();
-    
+
     readFile(argv[1], &readBoard, &writeBoard, &worldSize);
 
     wolfBreedingPeriod = atoi(argv[2]);
@@ -104,7 +104,7 @@ int main(int argc, const char *argv[]) {
                 readBoard[x][y] = writeBoard[x][y];
             }
         }
-        
+
         debug("\n");
         debug("Iteration %d Red\n", g + 1);
         debugBoard(readBoard, worldSize);
@@ -117,35 +117,34 @@ int main(int argc, const char *argv[]) {
             }
         }
 
-        /* copy updated cells to readBoard */
-        for (x = 0; x < worldSize; x++) {
-            for (y = 0; y < worldSize; y++) {
-                readBoard[x][y] = writeBoard[x][y];
-            }
-        }
-
         for (pos.x = 0; pos.x < worldSize; pos.x++) {
             for (pos.y = 0; pos.y < worldSize; pos.y++) {
-                switch (readBoard[pos.x][pos.y].type) {
+                switch (writeBoard[pos.x][pos.y].type) {
                 case SQUIRRELONTREE:
                 case SQUIRREL:
-                    readBoard[pos.x][pos.y].breeding_period++;
-                    readBoard[pos.x][pos.y].starvation_period++;
+                    writeBoard[pos.x][pos.y].breeding_period++;
                     break;
                 case WOLF:
                     /* Matem-me agora! */
-                    if (readBoard[pos.x][pos.y].starvation_period >= wolfStarvationPeriod) {
-                        readBoard[pos.x][pos.y].type = EMPTY;
-                        readBoard[pos.x][pos.y].breeding_period = 0;
-                        readBoard[pos.x][pos.y].starvation_period = 0;
+                    if (writeBoard[pos.x][pos.y].starvation_period >= wolfStarvationPeriod) {
+                        writeBoard[pos.x][pos.y].type = EMPTY;
+                        writeBoard[pos.x][pos.y].breeding_period = 0;
+                        writeBoard[pos.x][pos.y].starvation_period = 0;
                     } else {
-                        readBoard[pos.x][pos.y].breeding_period++;
-                        readBoard[pos.x][pos.y].starvation_period++;
+                        writeBoard[pos.x][pos.y].breeding_period++;
+                        writeBoard[pos.x][pos.y].starvation_period++;
                     }
                     break;
                 }
             }
         }
+        
+        /* copy updated cells to readBoard */
+        for (x = 0; x < worldSize; x++) {
+            for (y = 0; y < worldSize; y++) {
+                readBoard[x][y] = writeBoard[x][y];
+            }
+        }        
 
         debug("Iteration %d Black\n", g + 1);
         debugBoard(readBoard, worldSize);
@@ -266,8 +265,11 @@ void processConflictSameType(world *oldCell, world *destCell) {
 
 void processConflict(world *oldCell, world *destCell) {
     destCell->type = WOLF;
-    destCell->starvation_period = - (destCell->starvation_period + wolfStarvationPeriod);
-    destCell->breeding_period = oldCell->breeding_period;
+    destCell->starvation_period = 0;
+    
+    if(oldCell->type == WOLF) {
+        destCell->breeding_period = oldCell->breeding_period;
+    }
 }
 
 /*
