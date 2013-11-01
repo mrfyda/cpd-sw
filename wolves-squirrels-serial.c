@@ -77,8 +77,6 @@ int main(int argc, const char *argv[]) {
     if (argc != 6)
         debug("Unexpected number of input: %d\n", argc);
 
-    start = omp_get_wtime();
-
     readFile(argv[1], &readBoard, &writeBoard, &worldSize);
 
     wolfBreedingPeriod = atoi(argv[2]);
@@ -87,6 +85,8 @@ int main(int argc, const char *argv[]) {
     numberOfGenerations = atoi(argv[5]);
 
     debugBoard(readBoard, worldSize);
+
+    start = omp_get_wtime();
 
     /* process each generation */
     for (g = 0; g < numberOfGenerations; g++) {
@@ -160,9 +160,9 @@ int main(int argc, const char *argv[]) {
         debugBoard(readBoard, worldSize);
     }
 
-    printBoardList(readBoard, worldSize);
-
     end = omp_get_wtime();
+
+    printBoardList(readBoard, worldSize);
 
     for (pos.x = 0; pos.x < worldSize; pos.x++) {
         free(readBoard[pos.x]);
@@ -507,3 +507,4 @@ void processWolf(world **oldBoard, world ***newBoard, int worldSize, position po
 }
 /*********************************************Wolf Rules End*********************************************/
 /********************************************************************************************************/
+
