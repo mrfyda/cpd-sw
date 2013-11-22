@@ -1,0 +1,9 @@
+universe = parallel
+executable = /usr/sbin/ompiwrapper.sh
+arguments = wolves-squirrels-serial
+log = outputs/log
+output = outputs/out
+error = outputs/err
+machine_count = 4
+queue
+
