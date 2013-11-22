@@ -148,10 +148,8 @@ int main(int argc, const char *argv[]) {
 
     printBoardList(readBoard, worldSize);
 
-    for (pos.x = 0; pos.x < worldSize; pos.x++) {
-        free(readBoard[pos.x]);
-        free(writeBoard[pos.x]);
-    }
+    free(*readBoard);
+    free(*writeBoard);
     free(readBoard);
     free(writeBoard);
 
@@ -164,13 +162,17 @@ void readFile(const char *path, world ***readBoard, world ***writeBoard, int *wo
 
     if (fgets(line, 80, fr) != NULL) {
         int i, j;
+        world *readSegment = NULL, *writeSegment = NULL;
         sscanf(line, "%d", worldSize);
+
+        readSegment = (world *) malloc(*worldSize * (*worldSize * sizeof(world)));
+        writeSegment = (world *) malloc(*worldSize * (*worldSize * sizeof(world)));
 
         *readBoard = (world **) malloc(*worldSize * sizeof(world *));
         *writeBoard = (world **) malloc(*worldSize * sizeof(world *));
         for (i = 0; i < *worldSize; i++) {
-            (*readBoard)[i] = (world *) malloc(*worldSize * sizeof(world));
-            (*writeBoard)[i] = (world *) malloc(*worldSize * sizeof(world));
+            (*readBoard)[i] = &readSegment[*worldSize * i];
+            (*writeBoard)[i] = &writeSegment[*worldSize * i];
 
             for (j = 0; j < *worldSize; j++) {
                 (*readBoard)[i][j].type = EMPTY;
