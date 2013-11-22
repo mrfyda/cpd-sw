@@ -5,12 +5,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <mpi.h>
 
 /*
     Utils
 */
 
-#define DEBUG 0
+#define DEBUG 1
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 
 typedef struct {
@@ -65,16 +66,25 @@ int squirrelBreedingPeriod;
 int wolfStarvationPeriod;
 
 
-int main(int argc, const char *argv[]) {
+int main(int argc, char *argv[]) {
     int worldSize;
     world **readBoard = NULL, **writeBoard = NULL;
     int g;
     position pos;
     int numberOfGenerations;
+    MPI_Status status;
+    int id, p;
+
+    MPI_Init(&argc, &argv);
+
+    MPI_Comm_rank(MPI_COMM_WORLD, &id);
+    MPI_Comm_size(MPI_COMM_WORLD, &p);
+    
+    debug("Process: %d %d\n", id, p);
 
     if (argc != 6)
         debug("Unexpected number of input: %d\n", argc);
-
+  
     readFile(argv[1], &readBoard, &writeBoard, &worldSize);
 
     wolfBreedingPeriod = atoi(argv[2]);
@@ -82,7 +92,9 @@ int main(int argc, const char *argv[]) {
     wolfStarvationPeriod = atoi(argv[4]);
     numberOfGenerations = atoi(argv[5]);
 
+    /*
     debugBoard(readBoard, worldSize);
+    */
 
     /* process each generation */
     for (g = 0; g < numberOfGenerations; g++) {
@@ -101,10 +113,12 @@ int main(int argc, const char *argv[]) {
             }
         }
 
+        /*
         debug("\n");
         debug("Iteration %d Red\n", g + 1);
         debugBoard(readBoard, worldSize);
         debug("\n");
+        */
 
         /* process second sub generation */
         for (pos.x = 0; pos.x < worldSize; pos.x++) {
@@ -142,8 +156,10 @@ int main(int argc, const char *argv[]) {
             }
         }
 
+        /*
         debug("Iteration %d Black\n", g + 1);
         debugBoard(readBoard, worldSize);
+        */
     }
 
     printBoardList(readBoard, worldSize);
@@ -152,6 +168,8 @@ int main(int argc, const char *argv[]) {
     free(*writeBoard);
     free(readBoard);
     free(writeBoard);
+    
+    MPI_Finalize();
 
     return 0;
 }

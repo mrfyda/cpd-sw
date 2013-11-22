@@ -1,6 +1,6 @@
 universe = parallel
 executable = /usr/sbin/ompiwrapper.sh
-arguments = wolves-squirrels-serial
+arguments = wolves-squirrels-serial tests/ex3.in 3 4 4 4
 log = outputs/log
 output = outputs/out
 error = outputs/err
