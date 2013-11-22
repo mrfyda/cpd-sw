@@ -1,11 +1,10 @@
 /*
-    wolves-squirrels-serial.c
+    wolves-squirrels-mpi.c
 */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include <omp.h>
 
 /*
     Utils
@@ -71,7 +70,6 @@ int main(int argc, const char *argv[]) {
     world **readBoard = NULL, **writeBoard = NULL;
     int g;
     position pos;
-    int start, end;
     int numberOfGenerations;
 
     if (argc != 6)
@@ -85,8 +83,6 @@ int main(int argc, const char *argv[]) {
     numberOfGenerations = atoi(argv[5]);
 
     debugBoard(readBoard, worldSize);
-
-    start = omp_get_wtime();
 
     /* process each generation */
     for (g = 0; g < numberOfGenerations; g++) {
@@ -138,19 +134,17 @@ int main(int argc, const char *argv[]) {
                 }
             }
         }
-        
+
         /* copy updated cells to readBoard */
         for (x = 0; x < worldSize; x++) {
             for (y = 0; y < worldSize; y++) {
                 readBoard[x][y] = writeBoard[x][y];
             }
-        }        
+        }
 
         debug("Iteration %d Black\n", g + 1);
         debugBoard(readBoard, worldSize);
     }
-
-    end = omp_get_wtime();
 
     printBoardList(readBoard, worldSize);
 
@@ -160,9 +154,6 @@ int main(int argc, const char *argv[]) {
     }
     free(readBoard);
     free(writeBoard);
-
-    printf("TIME: %d\n", end - start);
-    fflush(stdout);
 
     return 0;
 }
@@ -266,8 +257,8 @@ void processConflictSameType(world *oldCell, world *destCell) {
 void processConflict(world *oldCell, world *destCell) {
     destCell->type = WOLF;
     destCell->starvation_period = 0;
-    
-    if(oldCell->type == WOLF) {
+
+    if (oldCell->type == WOLF) {
         destCell->breeding_period = oldCell->breeding_period;
     }
 }
