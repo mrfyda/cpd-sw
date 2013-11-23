@@ -1,5 +1,5 @@
-FLAGS   = -ansi -pedantic -Wall -g
-CC      =  mpicc
+FLAGS   = -ansi -pedantic -Wall -g -lm
+CC      = mpicc
 CFLAGS  = $(FLAGS) $(INCLUDE)
 LIBS    = 
 CYGLIBS = 
@@ -15,7 +15,7 @@ all: clean $(shell uname -o) clean run
 local: clean $(shell uname -o) clean lrun
 
 GNU/Linux:
-	@$(CC) $(CFLAGS) $(IN) $(OUT) $(LIBDIR) $< $(LIBS)
+	@$(CC) $(IN) $(OUT) $(CFLAGS) $(LIBDIR) $< $(LIBS)
 
 Cygwin:
 	@$(CC) $(FLAGS) $(IN) $(OUT).exe $< $(CYGLIBS)

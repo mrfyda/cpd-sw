@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <mpi.h>
+#include <math.h>
 
 /*
     Utils
@@ -50,7 +51,7 @@ typedef struct {
     int starvation_period;
 } world;
 
-void readFile(const char *path, world ***readBoard, world ***writeBoard, int *worldSize);
+void readFile(const char *path, world ***readBoard, world ***writeBoard, int *worldSize, int id, int p, int *partitionSize);
 void debugBoard(world **board, int worldSize);
 void debug(const char *format, ...);
 void printBoardList(world **board, int worldSize);
@@ -68,24 +69,24 @@ int wolfStarvationPeriod;
 
 int main(int argc, char *argv[]) {
     int worldSize;
+    int partitionSize;
     world **readBoard = NULL, **writeBoard = NULL;
     int g;
     position pos;
     int numberOfGenerations;
-    MPI_Status status;
     int id, p;
 
     MPI_Init(&argc, &argv);
 
     MPI_Comm_rank(MPI_COMM_WORLD, &id);
     MPI_Comm_size(MPI_COMM_WORLD, &p);
-    
-    debug("Process: %d %d\n", id, p);
+
+    debug("Process: %d of %d\n", id, p);
 
     if (argc != 6)
         debug("Unexpected number of input: %d\n", argc);
-  
-    readFile(argv[1], &readBoard, &writeBoard, &worldSize);
+
+    readFile(argv[1], &readBoard, &writeBoard, &worldSize, id , p, &partitionSize);
 
     wolfBreedingPeriod = atoi(argv[2]);
     squirrelBreedingPeriod = atoi(argv[3]);
@@ -168,27 +169,49 @@ int main(int argc, char *argv[]) {
     free(*writeBoard);
     free(readBoard);
     free(writeBoard);
-    
+
     MPI_Finalize();
 
     return 0;
 }
 
-void readFile(const char *path, world ***readBoard, world ***writeBoard, int *worldSize) {
+void readFile(const char *path, world ***readBoard, world ***writeBoard, int *worldSize, int id , int p, int *partitionSize) {
     char line[80];
     FILE *fr = fopen (path, "rt");
 
     if (fgets(line, 80, fr) != NULL) {
         int i, j;
+        int *requiredLines;
+        int startX = 0;
         world *readSegment = NULL, *writeSegment = NULL;
         sscanf(line, "%d", worldSize);
 
-        readSegment = (world *) malloc(*worldSize * (*worldSize * sizeof(world)));
-        writeSegment = (world *) malloc(*worldSize * (*worldSize * sizeof(world)));
+        requiredLines = (int *) malloc(p * sizeof(int));
+        for (i = 0; i < p; i++) {
+            int sum = 0;
+            float division = (float)(*worldSize) / (float)p;
 
-        *readBoard = (world **) malloc(*worldSize * sizeof(world *));
-        *writeBoard = (world **) malloc(*worldSize * sizeof(world *));
-        for (i = 0; i < *worldSize; i++) {
+            if (i == p - 1) {
+                requiredLines[i] = *worldSize - sum;
+            } else if (division - abs(division) > 0.5) {
+                requiredLines[i] = ceil(division);
+            } else {
+                requiredLines[i] = floor(division);
+            }
+
+            sum += requiredLines[i];
+            if (i < id) {
+                startX += requiredLines[i];
+            }
+        }
+
+        readSegment = (world *) malloc(requiredLines[id] * (*worldSize * sizeof(world)));
+        writeSegment = (world *) malloc(requiredLines[id] * (*worldSize * sizeof(world)));
+
+        *readBoard = (world **) malloc(requiredLines[id] * sizeof(world *));
+        *writeBoard = (world **) malloc(requiredLines[id] * sizeof(world *));
+
+        for (i = 0; i < requiredLines[id]; i++) {
             (*readBoard)[i] = &readSegment[*worldSize * i];
             (*writeBoard)[i] = &writeSegment[*worldSize * i];
 
@@ -208,9 +231,14 @@ void readFile(const char *path, world ***readBoard, world ***writeBoard, int *wo
 
             sscanf(line, "%d %d %c", &x, &y, &symbol);
 
-            (*readBoard)[x][y].type = symbol;
-            (*writeBoard)[x][y].type = symbol;
+            if (x >= startX && x < startX + requiredLines[id]) {
+                (*readBoard)[x - startX][y].type = symbol;
+                (*writeBoard)[x - startX][y].type = symbol;
+            }
         }
+
+        *partitionSize = requiredLines[id];
+        free(requiredLines);
     }
 
     fclose(fr);
@@ -413,7 +441,6 @@ void moveWolf(world *oldCell, world *newCell, world *destCell) {
         destCell->starvation_period = oldCell->starvation_period;
         destCell->breeding_period = oldCell->breeding_period;
     }
-
 
     if (oldCell->breeding_period >= wolfBreedingPeriod) {
         newCell->type = WOLF;
