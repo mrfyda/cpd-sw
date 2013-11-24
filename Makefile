@@ -3,8 +3,9 @@ CC      = mpicc
 CFLAGS  = $(FLAGS) $(INCLUDE)
 LIBS    = 
 CYGLIBS = 
+USER    = $(shell cat user.conf)
 
-C_FILES = $(wildcard *.c)
+C_FILES   = $(wildcard *.c)
 OBJ_FILES = $(patsubst %.c,obj/%.o,$(C_FILES))
 
 IN      = $(C_FILES)
@@ -25,11 +26,13 @@ clean:
 	@rm -rf *.a *.o wolves-squirrels-serial
 
 run:
-	scp bin/wolves-squirrels-serial ist169637@cluster.rnl.ist.utl.pt:/mnt/nimbus/pool/CPD/groups/15
-	scp condor ist169637@cluster.rnl.ist.utl.pt:/mnt/nimbus/pool/CPD/groups/15
-	ssh ist169637@cluster.rnl.ist.utl.pt 'bash -c "cd /mnt/nimbus/pool/CPD/groups/15; condor_submit condor; tail -f outputs/out"'
-	# scp -r ist169637@cluster.rnl.ist.utl.pt:/mnt/nimbus/pool/CPD/groups/15/outputs outputs
+	scp bin/wolves-squirrels-serial ist1${USER}@cluster.rnl.ist.utl.pt:/mnt/nimbus/pool/CPD/groups/15/${USER}/
+	scp condor ist1${USER}@cluster.rnl.ist.utl.pt:/mnt/nimbus/pool/CPD/groups/15/${USER}/
+	ssh ist1${USER}@cluster.rnl.ist.utl.pt 'bash -c "cd /mnt/nimbus/pool/CPD/groups/15/${USER}/; condor_submit condor; tail -f outputs/out"'
+	# scp -r ist1${USER}@cluster.rnl.ist.utl.pt:/mnt/nimbus/pool/CPD/groups/15/${USER}/outputs outputs
 
 lrun:
 	mpirun -np 4 ./bin/wolves-squirrels-serial tests/ex3.in 3 4 4 4
 
+whoami:
+	$(info ${USER})
