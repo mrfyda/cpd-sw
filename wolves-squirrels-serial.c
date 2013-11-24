@@ -60,7 +60,7 @@ typedef struct {
     int startX;  /* starting position considering overlapping */
 } partition;
 
-void readFile(const char *path, world ***readBoard, world ***writeBoard, int *worldSize, int id, int p, partition **partitions, int *partitionSize);
+void readFile(const char *path, world ***readBoard, world ***writeBoard, int *worldSize, int id, int p, partition **partitions);
 void debugBoard(world **board, int partitionSize, int worldSize);
 void debug(const char *format, ...);
 void printBoardList(world **board, int worldSize);
@@ -96,7 +96,8 @@ int main(int argc, char *argv[]) {
     if (argc != 6)
         debug("Unexpected number of input: %d\n", argc);
 
-    readFile(argv[1], &readBoard, &writeBoard, &worldSize, id , p, &partitions, &partitionSize);
+    readFile(argv[1], &readBoard, &writeBoard, &worldSize, id , p, &partitions);
+    partitionSize = partitions[id].prev + partitions[id].current + partitions[id].next;
 
     wolfBreedingPeriod = atoi(argv[2]);
     squirrelBreedingPeriod = atoi(argv[3]);
@@ -109,8 +110,9 @@ int main(int argc, char *argv[]) {
 
     /* process each generation */
     for (g = 0; g < numberOfGenerations; g++) {
-        /* process first sub generation */
         int x, y;
+
+        /* process first sub generation */
         for (pos.x = 0; pos.x < partitionSize; pos.x++) {
             for (pos.y = pos.x % 2; pos.y < worldSize; pos.y += 2) {
                 processCell(readBoard, &writeBoard, partitionSize, worldSize, pos);
@@ -173,7 +175,7 @@ int main(int argc, char *argv[]) {
         */
     }
 
-/*
+    /*
     int i, j;
     for (i = partitions[id].startX; i < partitionSize; i++) {
         for (j = 0; j < worldSize; j++) {
@@ -183,7 +185,8 @@ int main(int argc, char *argv[]) {
             }
         }
     }
-*/
+    */
+
     printBoardList(readBoard, worldSize);
 
     free(*readBoard);
@@ -197,7 +200,7 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-void readFile(const char *path, world ***readBoard, world ***writeBoard, int *worldSize, int id , int p, partition **partitions, int *partitionSize) {
+void readFile(const char *path, world ***readBoard, world ***writeBoard, int *worldSize, int id , int p, partition **partitions) {
     char line[80];
     FILE *fr = fopen (path, "rt");
 
@@ -205,6 +208,7 @@ void readFile(const char *path, world ***readBoard, world ***writeBoard, int *wo
         int i, j;
         int sum = 0;
         int firstSize = 0;
+        int partitionSize = 0;
         world *readSegment = NULL, *writeSegment = NULL;
 
         sscanf(line, "%d", worldSize);
@@ -246,17 +250,17 @@ void readFile(const char *path, world ***readBoard, world ***writeBoard, int *wo
             sum += (*partitions)[i].current;
         }
 
-        *partitionSize = (*partitions)[id].prev + (*partitions)[id].current + (*partitions)[id].next;
+        partitionSize = (*partitions)[id].prev + (*partitions)[id].current + (*partitions)[id].next;
 
         /* allocate memory in one contiguous segment */
-        readSegment = (world *) malloc(*partitionSize * (*worldSize * sizeof(world)));
-        writeSegment = (world *) malloc(*partitionSize * (*worldSize * sizeof(world)));
+        readSegment = (world *) malloc(partitionSize * (*worldSize * sizeof(world)));
+        writeSegment = (world *) malloc(partitionSize * (*worldSize * sizeof(world)));
 
-        *readBoard = (world **) malloc(*partitionSize * sizeof(world *));
-        *writeBoard = (world **) malloc(*partitionSize * sizeof(world *));
+        *readBoard = (world **) malloc(partitionSize * sizeof(world *));
+        *writeBoard = (world **) malloc(partitionSize * sizeof(world *));
 
         /* set initial conditions for each cell */
-        for (i = 0; i < *partitionSize; i++) {
+        for (i = 0; i < partitionSize; i++) {
             (*readBoard)[i] = &readSegment[*worldSize * i];
             (*writeBoard)[i] = &writeSegment[*worldSize * i];
 
@@ -278,7 +282,7 @@ void readFile(const char *path, world ***readBoard, world ***writeBoard, int *wo
 
             sscanf(line, "%d %d %c", &x, &y, &symbol);
 
-            if (x >= startX && x < startX + *partitionSize) {
+            if (x >= startX && x < startX + partitionSize) {
                 (*readBoard)[x - startX][y].type = symbol;
                 (*writeBoard)[x - startX][y].type = symbol;
             }
