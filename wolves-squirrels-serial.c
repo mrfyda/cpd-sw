@@ -16,6 +16,10 @@
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 
+#define PREV_PART 100
+#define NEXT_PART 101
+#define CPD MPI_COMM_WORLD
+
 typedef struct {
     int x;
     int y;
@@ -64,6 +68,7 @@ void readFile(const char *path, world ***readBoard, world ***writeBoard, int *wo
 void debugBoard(world **board, int partitionSize, int worldSize);
 void debug(const char *format, ...);
 void printBoardList(world **board, int worldSize);
+void printBoardListParcial(world **board, partition part, int worldSize);
 void processSquirrel(world **oldBoard, world ***newBoard, int partitionSize, int worldSize, position pos);
 void processWolf(world **oldBoard, world ***newBoard, int partitionSize, int worldSize, position pos);
 void processConflictSameType(world *currentCell, world *newCell);
@@ -90,8 +95,6 @@ int main(int argc, char *argv[]) {
 
     MPI_Comm_rank(MPI_COMM_WORLD, &id);
     MPI_Comm_size(MPI_COMM_WORLD, &p);
-
-    debug("Process: %d of %d\n", id, p);
 
     if (argc != 6)
         debug("Unexpected number of input: %d\n", argc);
@@ -170,24 +173,34 @@ int main(int argc, char *argv[]) {
         }
 
         /*
+        if (partitions[id].prev > 0) {
+            MPI_Request requests[2];
+            MPI_Status statuses[2];
+
+            MPI_Irecv(*readBoard, partitions[id - 1].current, MPI_BYTE, id - 1, PREV_PART, CPD, &requests[1]);
+            MPI_Isend(*readBoard, partitions[id].current, MPI_BYTE, id - 1, NEXT_PART, CPD, &requests[0]);
+            MPI_Waitall(2, requests, statuses);
+        }
+        if (partitions[id].next > 0) {
+            MPI_Request requests[2];
+            MPI_Status statuses[2];
+
+            MPI_Irecv(*readBoard, partitions[id + 1].current, MPI_BYTE, id + 1, NEXT_PART, CPD, &requests[1]);
+            MPI_Isend(*readBoard, partitions[id].current, MPI_BYTE, id + 1, PREV_PART, CPD, &requests[0]);
+            MPI_Waitall(2, requests, statuses);
+        }
+        */
+
+        /*
         debug("Iteration %d Black\n", g + 1);
         debugBoard(readBoard, worldSize);
         */
     }
 
+    printBoardListParcial(readBoard, partitions[id], worldSize);
     /*
-    int i, j;
-    for (i = partitions[id].startX; i < partitionSize; i++) {
-        for (j = 0; j < worldSize; j++) {
-            if (readBoard[i][j].type != EMPTY) {
-                printf("%d %d %c\n", i + partitions[id].startX, j, readBoard[i][j].type);
-                fflush(stdout);
-            }
-        }
-    }
-    */
-
     printBoardList(readBoard, worldSize);
+    */
 
     free(*readBoard);
     free(*writeBoard);
@@ -317,6 +330,20 @@ void printBoardList(world **board, int worldSize) {
         for (j = 0; j < worldSize; j++) {
             if (board[i][j].type != EMPTY) {
                 printf("%d %d %c\n", i, j, board[i][j].type);
+                fflush(stdout);
+            }
+        }
+    }
+}
+
+void printBoardListParcial(world **board, partition part, int worldSize) {
+    int i, j;
+    int lower = part.startX + part.prev;
+    int upper = part.current + part.prev + part.startX;
+    for (i = lower; i < upper; i++) {
+        for (j = 0; j < worldSize; j++) {
+            if (board[i - part.startX][j].type != EMPTY) {
+                printf("%d %d %c\n", i, j, board[i - part.startX][j].type);
                 fflush(stdout);
             }
         }
