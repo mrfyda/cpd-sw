@@ -172,13 +172,13 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        /*
         if (partitions[id].prev > 0) {
             MPI_Request requests[2];
             MPI_Status statuses[2];
 
             MPI_Irecv(*readBoard, partitions[id - 1].current, MPI_BYTE, id - 1, PREV_PART, CPD, &requests[1]);
             MPI_Isend(*readBoard, partitions[id].current, MPI_BYTE, id - 1, NEXT_PART, CPD, &requests[0]);
+
             MPI_Waitall(2, requests, statuses);
         }
         if (partitions[id].next > 0) {
@@ -187,9 +187,9 @@ int main(int argc, char *argv[]) {
 
             MPI_Irecv(*readBoard, partitions[id + 1].current, MPI_BYTE, id + 1, NEXT_PART, CPD, &requests[1]);
             MPI_Isend(*readBoard, partitions[id].current, MPI_BYTE, id + 1, PREV_PART, CPD, &requests[0]);
+
             MPI_Waitall(2, requests, statuses);
         }
-        */
 
         /*
         debug("Iteration %d Black\n", g + 1);
@@ -213,7 +213,7 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-void readFile(const char *path, world ***readBoard, world ***writeBoard, int *worldSize, int id , int p, partition **partitions) {
+void readFile(const char *path, world ***readBoard, world ***writeBoard, int *worldSize, int id, int p, partition **partitions) {
     char line[80];
     FILE *fr = fopen (path, "rt");
 
@@ -243,17 +243,17 @@ void readFile(const char *path, world ***readBoard, world ***writeBoard, int *wo
             if (i == 0) {
                 firstSize = MIN((*partitions)[0].current, PADDING);
 
-                (*partitions)[0].prev = 0;
-                (*partitions)[0].next = PADDING;
-                (*partitions)[0].startX = 0;
-            } else if (i == 1) {
-                (*partitions)[1].prev = firstSize;
-                (*partitions)[1].next = PADDING;
-                (*partitions)[1].startX = sum - firstSize;
+                (*partitions)[i].prev = 0;
+                (*partitions)[i].next = PADDING;
+                (*partitions)[i].startX = 0;
             } else if (i == p - 1) {
                 (*partitions)[i].prev = PADDING;
                 (*partitions)[i].next = 0;
                 (*partitions)[i].startX = sum - PADDING;
+            } else if (i == 1) {
+                (*partitions)[i].prev = firstSize;
+                (*partitions)[i].next = PADDING;
+                (*partitions)[i].startX = sum - firstSize;
             } else {
                 (*partitions)[i].prev = PADDING;
                 (*partitions)[i].next = PADDING;
