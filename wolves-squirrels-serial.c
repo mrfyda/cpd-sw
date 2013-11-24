@@ -53,7 +53,13 @@ typedef struct {
     int starvation_period;
 } world;
 
-void readFile(const char *path, world ***readBoard, world ***writeBoard, int *worldSize, int id, int p, int *partitionSize);
+typedef struct {
+    int prev;    /* size shared with previous process */
+    int current; /* current process partition */
+    int next;    /* size shared with next process */
+} partition;
+
+void readFile(const char *path, world ***readBoard, world ***writeBoard, int *worldSize, int id, int p, partition **partitions, int *partitionSize);
 void debugBoard(world **board, int partitionSize, int worldSize);
 void debug(const char *format, ...);
 void printBoardList(world **board, int worldSize);
@@ -72,6 +78,7 @@ int wolfStarvationPeriod;
 int main(int argc, char *argv[]) {
     int worldSize;
     int partitionSize;
+    partition *partitions;
     world **readBoard = NULL, **writeBoard = NULL;
     int g;
     position pos;
@@ -88,7 +95,7 @@ int main(int argc, char *argv[]) {
     if (argc != 6)
         debug("Unexpected number of input: %d\n", argc);
 
-    readFile(argv[1], &readBoard, &writeBoard, &worldSize, id , p, &partitionSize);
+    readFile(argv[1], &readBoard, &writeBoard, &worldSize, id , p, &partitions, &partitionSize);
 
     wolfBreedingPeriod = atoi(argv[2]);
     squirrelBreedingPeriod = atoi(argv[3]);
@@ -171,19 +178,19 @@ int main(int argc, char *argv[]) {
     free(*writeBoard);
     free(readBoard);
     free(writeBoard);
+    free(partitions);
 
     MPI_Finalize();
 
     return 0;
 }
 
-void readFile(const char *path, world ***readBoard, world ***writeBoard, int *worldSize, int id , int p, int *partitionSize) {
+void readFile(const char *path, world ***readBoard, world ***writeBoard, int *worldSize, int id , int p, partition **partitions, int *partitionSize) {
     char line[80];
     FILE *fr = fopen (path, "rt");
 
     if (fgets(line, 80, fr) != NULL) {
         int i, j;
-        int *requiredLines;
         int startX = 0;
         int sum = 0;
         int firstSize = 0;
@@ -193,35 +200,37 @@ void readFile(const char *path, world ***readBoard, world ***writeBoard, int *wo
 
         /* calculate partition size of each process
            calculate starting position considering overlapping of at most 2 lines to avoid conflicts */
-        requiredLines = (int *) malloc(p * sizeof(int));
+        *partitions = (partition *) malloc(p * sizeof(partition));
         for (i = 0; i < p; i++) {
             float division = (float)(*worldSize) / (float)p;
 
             if (i == p - 1) {
-                requiredLines[i] = *worldSize - sum;
+                (*partitions)[i].current = *worldSize - sum;
             } else if (division - abs(division) > 0.5) {
-                requiredLines[i] = ceil(division);
+                (*partitions)[i].current = ceil(division);
             } else {
-                requiredLines[i] = floor(division);
+                (*partitions)[i].current = floor(division);
             }
 
-            sum += requiredLines[i];
+            sum += (*partitions)[i].current;
             if (i < id) {
-                startX += requiredLines[i];
+                startX += (*partitions)[i].current;
             }
 
             if (i == 0) {
-                firstSize = MIN(requiredLines[0], PADDING);
-            }
+                firstSize = MIN((*partitions)[0].current, PADDING);
 
-            if (i == 0) {
-                requiredLines[0] += PADDING;
+                (*partitions)[0].prev = 0;
+                (*partitions)[0].next = PADDING;
             } else if (i == 1) {
-                requiredLines[1] += PADDING + firstSize;
+                (*partitions)[1].prev = firstSize;
+                (*partitions)[1].next = PADDING;
             } else if (i == p - 1) {
-                requiredLines[i] += PADDING;
+                (*partitions)[i].prev = PADDING;
+                (*partitions)[i].next = 0;
             } else {
-                requiredLines[i] += PADDING + firstSize;
+                (*partitions)[i].prev = PADDING;
+                (*partitions)[i].next = PADDING;
             }
         }
 
@@ -231,15 +240,17 @@ void readFile(const char *path, world ***readBoard, world ***writeBoard, int *wo
             startX -= PADDING;
         }
 
-        /* allocate memory in one contiguous segment */
-        readSegment = (world *) malloc(requiredLines[id] * (*worldSize * sizeof(world)));
-        writeSegment = (world *) malloc(requiredLines[id] * (*worldSize * sizeof(world)));
+        *partitionSize = (*partitions)[id].prev + (*partitions)[i].current + (*partitions)[i].next;
 
-        *readBoard = (world **) malloc(requiredLines[id] * sizeof(world *));
-        *writeBoard = (world **) malloc(requiredLines[id] * sizeof(world *));
+        /* allocate memory in one contiguous segment */
+        readSegment = (world *) malloc(*partitionSize * (*worldSize * sizeof(world)));
+        writeSegment = (world *) malloc(*partitionSize * (*worldSize * sizeof(world)));
+
+        *readBoard = (world **) malloc(*partitionSize * sizeof(world *));
+        *writeBoard = (world **) malloc(*partitionSize * sizeof(world *));
 
         /* set initial conditions for each cell */
-        for (i = 0; i < requiredLines[id]; i++) {
+        for (i = 0; i < *partitionSize; i++) {
             (*readBoard)[i] = &readSegment[*worldSize * i];
             (*writeBoard)[i] = &writeSegment[*worldSize * i];
 
@@ -260,14 +271,11 @@ void readFile(const char *path, world ***readBoard, world ***writeBoard, int *wo
 
             sscanf(line, "%d %d %c", &x, &y, &symbol);
 
-            if (x >= startX && x < startX + requiredLines[id]) {
+            if (x >= startX && x < startX + *partitionSize) {
                 (*readBoard)[x - startX][y].type = symbol;
                 (*writeBoard)[x - startX][y].type = symbol;
             }
         }
-
-        *partitionSize = requiredLines[id];
-        free(requiredLines);
     }
 
     fclose(fr);
