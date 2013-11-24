@@ -13,6 +13,7 @@
 */
 
 #define DEBUG 1
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 
 typedef struct {
@@ -44,6 +45,7 @@ void debug(const char *format, ...) {
 #define SQUIRRELONTREE '$'
 
 #define MOVES 4
+#define PADDING 2
 
 typedef struct {
     int type;
@@ -52,7 +54,7 @@ typedef struct {
 } world;
 
 void readFile(const char *path, world ***readBoard, world ***writeBoard, int *worldSize, int id, int p, int *partitionSize);
-void debugBoard(world **board, int worldSize);
+void debugBoard(world **board, int partitionSize, int worldSize);
 void debug(const char *format, ...);
 void printBoardList(world **board, int worldSize);
 void processSquirrel(world **oldBoard, world ***newBoard, int worldSize, position pos);
@@ -101,14 +103,14 @@ int main(int argc, char *argv[]) {
     for (g = 0; g < numberOfGenerations; g++) {
         /* process first sub generation */
         int x, y;
-        for (pos.x = 0; pos.x < worldSize; pos.x++) {
+        for (pos.x = 0; pos.x < partitionSize; pos.x++) {
             for (pos.y = pos.x % 2; pos.y < worldSize; pos.y += 2) {
                 processCell(readBoard, &writeBoard, worldSize, pos);
             }
         }
 
         /* copy updated cells to readBoard */
-        for (x = 0; x < worldSize; x++) {
+        for (x = 0; x < partitionSize; x++) {
             for (y = 0; y < worldSize; y++) {
                 readBoard[x][y] = writeBoard[x][y];
             }
@@ -122,13 +124,13 @@ int main(int argc, char *argv[]) {
         */
 
         /* process second sub generation */
-        for (pos.x = 0; pos.x < worldSize; pos.x++) {
+        for (pos.x = 0; pos.x < partitionSize; pos.x++) {
             for (pos.y = 1 - (pos.x % 2); pos.y < worldSize; pos.y += 2) {
                 processCell(readBoard, &writeBoard, worldSize, pos);
             }
         }
 
-        for (pos.x = 0; pos.x < worldSize; pos.x++) {
+        for (pos.x = 0; pos.x < partitionSize; pos.x++) {
             for (pos.y = 0; pos.y < worldSize; pos.y++) {
                 switch (writeBoard[pos.x][pos.y].type) {
                 case SQUIRRELONTREE:
@@ -151,7 +153,7 @@ int main(int argc, char *argv[]) {
         }
 
         /* copy updated cells to readBoard */
-        for (x = 0; x < worldSize; x++) {
+        for (x = 0; x < partitionSize; x++) {
             for (y = 0; y < worldSize; y++) {
                 readBoard[x][y] = writeBoard[x][y];
             }
@@ -183,12 +185,13 @@ void readFile(const char *path, world ***readBoard, world ***writeBoard, int *wo
         int i, j;
         int *requiredLines;
         int startX = 0;
+        int sum = 0;
+        int firstSize = 0;
         world *readSegment = NULL, *writeSegment = NULL;
         sscanf(line, "%d", worldSize);
 
         requiredLines = (int *) malloc(p * sizeof(int));
         for (i = 0; i < p; i++) {
-            int sum = 0;
             float division = (float)(*worldSize) / (float)p;
 
             if (i == p - 1) {
@@ -203,6 +206,26 @@ void readFile(const char *path, world ***readBoard, world ***writeBoard, int *wo
             if (i < id) {
                 startX += requiredLines[i];
             }
+
+            if (i == 0) {
+                firstSize = MIN(requiredLines[0], PADDING);
+            }
+
+            if (i == 0) {
+                requiredLines[0] += PADDING;
+            } else if (i == 1) {
+                requiredLines[1] += PADDING + firstSize;
+            } else if (i == p - 1) {
+                requiredLines[i] += PADDING;
+            } else {
+                requiredLines[i] += PADDING + firstSize;
+            }
+        }
+
+        if (id == 1) {
+            startX -= firstSize;
+        } else if (id != 0) {
+            startX -= PADDING;
         }
 
         readSegment = (world *) malloc(requiredLines[id] * (*worldSize * sizeof(world)));
@@ -244,7 +267,7 @@ void readFile(const char *path, world ***readBoard, world ***writeBoard, int *wo
     fclose(fr);
 }
 
-void debugBoard(world **board, int worldSize) {
+void debugBoard(world **board, int partitionSize, int worldSize) {
     if (DEBUG) {
         int i, j;
         debug("---------------------------------\n   ");
@@ -252,7 +275,7 @@ void debugBoard(world **board, int worldSize) {
             debug("%02d|", i);
         }
         debug("\n");
-        for (i = 0; i < worldSize; i++) {
+        for (i = 0; i < partitionSize; i++) {
             debug("%02d: ", i);
             for (j = 0; j < worldSize; j++) {
                 debug("%1c| ", board[i][j].type);
