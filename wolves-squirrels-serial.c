@@ -57,6 +57,7 @@ typedef struct {
     int prev;    /* size shared with previous process */
     int current; /* current process partition */
     int next;    /* size shared with next process */
+    int startX;  /* starting position considering overlapping */
 } partition;
 
 void readFile(const char *path, world ***readBoard, world ***writeBoard, int *worldSize, int id, int p, partition **partitions, int *partitionSize);
@@ -212,35 +213,30 @@ void readFile(const char *path, world ***readBoard, world ***writeBoard, int *wo
                 (*partitions)[i].current = floor(division);
             }
 
-            sum += (*partitions)[i].current;
-            if (i < id) {
-                startX += (*partitions)[i].current;
-            }
-
             if (i == 0) {
                 firstSize = MIN((*partitions)[0].current, PADDING);
 
                 (*partitions)[0].prev = 0;
                 (*partitions)[0].next = PADDING;
+                (*partitions)[0].startX = 0;
             } else if (i == 1) {
                 (*partitions)[1].prev = firstSize;
                 (*partitions)[1].next = PADDING;
+                (*partitions)[1].startX = sum - firstSize;
             } else if (i == p - 1) {
                 (*partitions)[i].prev = PADDING;
                 (*partitions)[i].next = 0;
+                (*partitions)[i].startX = sum - PADDING;
             } else {
                 (*partitions)[i].prev = PADDING;
                 (*partitions)[i].next = PADDING;
+                (*partitions)[i].startX = sum - PADDING;
             }
+
+            sum += (*partitions)[i].current;
         }
 
-        if (id == 1) {
-            startX -= firstSize;
-        } else if (id != 0) {
-            startX -= PADDING;
-        }
-
-        *partitionSize = (*partitions)[id].prev + (*partitions)[i].current + (*partitions)[i].next;
+        *partitionSize = (*partitions)[id].prev + (*partitions)[id].current + (*partitions)[id].next;
 
         /* allocate memory in one contiguous segment */
         readSegment = (world *) malloc(*partitionSize * (*worldSize * sizeof(world)));
