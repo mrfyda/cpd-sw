@@ -173,6 +173,17 @@ int main(int argc, char *argv[]) {
         */
     }
 
+/*
+    int i, j;
+    for (i = partitions[id].startX; i < partitionSize; i++) {
+        for (j = 0; j < worldSize; j++) {
+            if (readBoard[i][j].type != EMPTY) {
+                printf("%d %d %c\n", i + partitions[id].startX, j, readBoard[i][j].type);
+                fflush(stdout);
+            }
+        }
+    }
+*/
     printBoardList(readBoard, worldSize);
 
     free(*readBoard);
@@ -192,7 +203,6 @@ void readFile(const char *path, world ***readBoard, world ***writeBoard, int *wo
 
     if (fgets(line, 80, fr) != NULL) {
         int i, j;
-        int startX = 0;
         int sum = 0;
         int firstSize = 0;
         world *readSegment = NULL, *writeSegment = NULL;
@@ -264,6 +274,7 @@ void readFile(const char *path, world ***readBoard, world ***writeBoard, int *wo
         while (fgets(line, 80, fr) != NULL) {
             int x, y;
             char symbol;
+            int startX = (*partitions)[id].startX;
 
             sscanf(line, "%d %d %c", &x, &y, &symbol);
 
