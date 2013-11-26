@@ -117,9 +117,17 @@ int main(int argc, char *argv[]) {
         int x, y;
 
         /* process first sub generation */
-        for (pos.x = 0; pos.x < partitionSize; pos.x++) {
-            for (pos.y = pos.x % 2; pos.y < worldSize; pos.y += 2) {
-                processCell(readBoard, &writeBoard, partitionSize, worldSize, pos);
+        if (partitionSize % 2 != 0 && id % 2 != 0) {
+            for (pos.x = 0; pos.x < partitionSize; pos.x++) {
+                for (pos.y = 1 - (pos.x % 2); pos.y < worldSize; pos.y += 2) {
+                    processCell(readBoard, &writeBoard, partitionSize, worldSize, pos);
+                }
+            }
+        } else {
+            for (pos.x = 0; pos.x < partitionSize; pos.x++) {
+                for (pos.y = pos.x % 2; pos.y < worldSize; pos.y += 2) {
+                    processCell(readBoard, &writeBoard, partitionSize, worldSize, pos);
+                }
             }
         }
 
@@ -138,9 +146,17 @@ int main(int argc, char *argv[]) {
         */
 
         /* process second sub generation */
-        for (pos.x = 0; pos.x < partitionSize; pos.x++) {
-            for (pos.y = 1 - (pos.x % 2); pos.y < worldSize; pos.y += 2) {
-                processCell(readBoard, &writeBoard, partitionSize, worldSize, pos);
+        if (partitionSize % 2 != 0 && id % 2 != 0) {
+            for (pos.x = 0; pos.x < partitionSize; pos.x++) {
+                for (pos.y = pos.x % 2; pos.y < worldSize; pos.y += 2) {
+                    processCell(readBoard, &writeBoard, partitionSize, worldSize, pos);
+                }
+            }
+        } else {
+            for (pos.x = 0; pos.x < partitionSize; pos.x++) {
+                for (pos.y = 1 - (pos.x % 2); pos.y < worldSize; pos.y += 2) {
+                    processCell(readBoard, &writeBoard, partitionSize, worldSize, pos);
+                }
             }
         }
 
