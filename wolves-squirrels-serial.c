@@ -373,6 +373,7 @@ void printBoardListParcial(world **board, int worldSize) {
 }
 
 void processCell(world **readBoard, world ***writeBoard, int partitionSize, int worldSize, position pos) {
+
     switch (readBoard[pos.x][pos.y].type) {
     case SQUIRRELONTREE:
     case SQUIRREL:
@@ -498,7 +499,14 @@ void processSquirrel(world **oldBoard, world ***newBoard, int partitionSize, int
     possibleMoves = calculateSquirrelMoves(oldBoard, partitionSize, worldSize, pos, possiblePos);
 
     if (possibleMoves > 1) {
-        int c = pos.x * worldSize + pos.y;
+        int absPosX = pos.x - partitions[id].prev;
+        int i, c = 0;
+
+        for (i = 0; i < id; i++) {
+            absPosX += partitions[i].current;
+        }
+
+        c = absPosX * worldSize + pos.y;
         destPos = possiblePos[c % possibleMoves];
         destCell = &(*newBoard)[destPos.x][destPos.y];
     } else if (possibleMoves == 1) {
@@ -616,7 +624,14 @@ void processWolf(world **oldBoard, world ***newBoard, int partitionSize, int wor
     possibleMoves = calculateWolfMoves(oldBoard, partitionSize, worldSize, pos, possiblePos);
 
     if (possibleMoves > 1) {
-        int c = pos.x * worldSize + pos.y;
+        int absPosX = pos.x - partitions[id].prev;
+        int i, c = 0;
+
+        for (i = 0; i < id; i++) {
+            absPosX += partitions[i].current;
+        }
+
+        c = absPosX * worldSize + pos.y;
         destPos = possiblePos[c % possibleMoves];
         destCell = &(*newBoard)[destPos.x][destPos.y];
     } else if (possibleMoves == 1) {
@@ -630,4 +645,3 @@ void processWolf(world **oldBoard, world ***newBoard, int partitionSize, int wor
 }
 /*********************************************Wolf Rules End*********************************************/
 /********************************************************************************************************/
-
