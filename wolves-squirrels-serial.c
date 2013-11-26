@@ -64,11 +64,11 @@ typedef struct {
     int startX;  /* starting position considering overlapping */
 } partition;
 
-void readFile(const char *path, world ***readBoard, world ***writeBoard, int *worldSize, int id, int p, partition **partitions);
+void readFile(const char *path, world ***readBoard, world ***writeBoard, int *worldSize);
 void debugBoard(world **board, int partitionSize, int worldSize);
 void debug(const char *format, ...);
 void printBoardList(world **board, int worldSize);
-void printBoardListParcial(world **board, partition part, int worldSize);
+void printBoardListParcial(world **board, int worldSize);
 void processSquirrel(world **oldBoard, world ***newBoard, int partitionSize, int worldSize, position pos);
 void processWolf(world **oldBoard, world ***newBoard, int partitionSize, int worldSize, position pos);
 void processConflictSameType(world *currentCell, world *newCell);
@@ -80,16 +80,17 @@ int wolfBreedingPeriod;
 int squirrelBreedingPeriod;
 int wolfStarvationPeriod;
 
+int id, p;
+partition *partitions;
+
 
 int main(int argc, char *argv[]) {
     int worldSize;
     int partitionSize;
-    partition *partitions;
     world **readBoard = NULL, **writeBoard = NULL;
     int g;
     position pos;
     int numberOfGenerations;
-    int id, p;
 
     MPI_Init(&argc, &argv);
 
@@ -99,7 +100,7 @@ int main(int argc, char *argv[]) {
     if (argc != 6)
         debug("Unexpected number of input: %d\n", argc);
 
-    readFile(argv[1], &readBoard, &writeBoard, &worldSize, id , p, &partitions);
+    readFile(argv[1], &readBoard, &writeBoard, &worldSize);
     partitionSize = partitions[id].prev + partitions[id].current + partitions[id].next;
 
     wolfBreedingPeriod = atoi(argv[2]);
@@ -202,7 +203,7 @@ int main(int argc, char *argv[]) {
         */
     }
 
-    printBoardListParcial(readBoard, partitions[id], worldSize);
+    printBoardListParcial(readBoard, worldSize);
     /*
     printBoardList(readBoard, worldSize);
     */
@@ -218,7 +219,7 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-void readFile(const char *path, world ***readBoard, world ***writeBoard, int *worldSize, int id, int p, partition **partitions) {
+void readFile(const char *path, world ***readBoard, world ***writeBoard, int *worldSize) {
     char line[80];
     FILE *fr = fopen (path, "rt");
 
@@ -233,42 +234,42 @@ void readFile(const char *path, world ***readBoard, world ***writeBoard, int *wo
 
         /* calculate partition size of each process
            calculate starting position considering overlapping of at most 2 lines to avoid conflicts */
-        *partitions = (partition *) malloc(p * sizeof(partition));
+        partitions = (partition *) malloc(p * sizeof(partition));
         for (i = 0; i < p; i++) {
             float division = (float)(*worldSize) / (float)p;
 
             if (i == p - 1) {
-                (*partitions)[i].current = *worldSize - sum;
+                partitions[i].current = *worldSize - sum;
             } else if (division - abs(division) > 0.5) {
-                (*partitions)[i].current = ceil(division);
+                partitions[i].current = ceil(division);
             } else {
-                (*partitions)[i].current = floor(division);
+                partitions[i].current = floor(division);
             }
 
             if (i == 0) {
-                firstSize = MIN((*partitions)[0].current, PADDING);
+                firstSize = MIN(partitions[0].current, PADDING);
 
-                (*partitions)[i].prev = 0;
-                (*partitions)[i].next = PADDING;
-                (*partitions)[i].startX = 0;
+                partitions[i].prev = 0;
+                partitions[i].next = PADDING;
+                partitions[i].startX = 0;
             } else if (i == p - 1) {
-                (*partitions)[i].prev = PADDING;
-                (*partitions)[i].next = 0;
-                (*partitions)[i].startX = sum - PADDING;
+                partitions[i].prev = PADDING;
+                partitions[i].next = 0;
+                partitions[i].startX = sum - PADDING;
             } else if (i == 1) {
-                (*partitions)[i].prev = firstSize;
-                (*partitions)[i].next = PADDING;
-                (*partitions)[i].startX = sum - firstSize;
+                partitions[i].prev = firstSize;
+                partitions[i].next = PADDING;
+                partitions[i].startX = sum - firstSize;
             } else {
-                (*partitions)[i].prev = PADDING;
-                (*partitions)[i].next = PADDING;
-                (*partitions)[i].startX = sum - PADDING;
+                partitions[i].prev = PADDING;
+                partitions[i].next = PADDING;
+                partitions[i].startX = sum - PADDING;
             }
 
-            sum += (*partitions)[i].current;
+            sum += partitions[i].current;
         }
 
-        partitionSize = (*partitions)[id].prev + (*partitions)[id].current + (*partitions)[id].next;
+        partitionSize = partitions[id].prev + partitions[id].current + partitions[id].next;
 
         /* allocate memory in one contiguous segment */
         readSegment = (world *) malloc(partitionSize * (*worldSize * sizeof(world)));
@@ -296,7 +297,7 @@ void readFile(const char *path, world ***readBoard, world ***writeBoard, int *wo
         while (fgets(line, 80, fr) != NULL) {
             int x, y;
             char symbol;
-            int startX = (*partitions)[id].startX;
+            int startX = partitions[id].startX;
 
             sscanf(line, "%d %d %c", &x, &y, &symbol);
 
@@ -341,14 +342,14 @@ void printBoardList(world **board, int worldSize) {
     }
 }
 
-void printBoardListParcial(world **board, partition part, int worldSize) {
+void printBoardListParcial(world **board, int worldSize) {
     int i, j;
-    int lower = part.startX + part.prev;
-    int upper = part.current + part.prev + part.startX;
+    int lower = partitions[id].startX + partitions[id].prev;
+    int upper = partitions[id].current + partitions[id].prev + partitions[id].startX;
     for (i = lower; i < upper; i++) {
         for (j = 0; j < worldSize; j++) {
-            if (board[i - part.startX][j].type != EMPTY) {
-                printf("%d %d %c\n", i, j, board[i - part.startX][j].type);
+            if (board[i - partitions[id].startX][j].type != EMPTY) {
+                printf("%d %d %c\n", i, j, board[i - partitions[id].startX][j].type);
                 fflush(stdout);
             }
         }

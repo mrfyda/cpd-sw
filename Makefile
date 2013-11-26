@@ -32,7 +32,7 @@ run:
 	# scp -r ist1${USER}@cluster.rnl.ist.utl.pt:/mnt/nimbus/pool/CPD/groups/15/${USER}/outputs outputs
 
 lrun:
-	@mpirun -np 4 ./bin/wolves-squirrels-serial tests/ex3.in 3 4 4 4
+	@mpirun -np 2 ./bin/wolves-squirrels-serial tests/ex3.in 3 4 4 4
 
 whoami:
 	@echo ${USER}
