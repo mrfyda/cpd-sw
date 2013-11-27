@@ -142,7 +142,7 @@ int main(int argc, char *argv[]) {
             MPI_Request requests[2];
             MPI_Status status[2];
 
-            int mine = partitions[id].startX + partitions[id].prev;
+            int mine = (partitions[id].startX + partitions[id].prev) * worldSize;
 
             MPI_Irecv(*readBoard, partitions[id].prev * worldSize * sizeof(world), MPI_BYTE, id - 1, PREV_PART, CPD, &requests[1]);
             MPI_Isend(*readBoard + mine, partitions[id - 1].next * worldSize * sizeof(world), MPI_BYTE, id - 1, NEXT_PART, CPD, &requests[0]);
@@ -153,8 +153,8 @@ int main(int argc, char *argv[]) {
             MPI_Request requests[2];
             MPI_Status status[2];
 
-            int his = partitions[id + 1].startX * worldSize;
-            int mine = partitions[id].startX + partitions[id].prev + partitions[id].current * worldSize;
+            int mine = (partitions[id].startX + partitions[id].prev + partitions[id].current) * worldSize;
+            int his = (partitions[id].startX + partitions[id].prev + partitions[id].current - partitions[id + 1].prev) * worldSize;
 
             MPI_Irecv(*readBoard + mine, partitions[id].next * worldSize * sizeof(world), MPI_BYTE, id + 1, NEXT_PART, CPD, &requests[1]);
             MPI_Isend(*readBoard + his, partitions[id + 1].prev * worldSize * sizeof(world), MPI_BYTE, id + 1, PREV_PART, CPD, &requests[0]);
@@ -217,7 +217,7 @@ int main(int argc, char *argv[]) {
             MPI_Request requests[2];
             MPI_Status status[2];
 
-            int mine = partitions[id].startX + partitions[id].prev;
+            int mine = (partitions[id].startX + partitions[id].prev) * worldSize;
 
             MPI_Irecv(*readBoard, partitions[id].prev * worldSize * sizeof(world), MPI_BYTE, id - 1, PREV_PART, CPD, &requests[1]);
             MPI_Isend(*readBoard + mine, partitions[id - 1].next * worldSize * sizeof(world), MPI_BYTE, id - 1, NEXT_PART, CPD, &requests[0]);
@@ -228,8 +228,8 @@ int main(int argc, char *argv[]) {
             MPI_Request requests[2];
             MPI_Status status[2];
 
-            int his = partitions[id + 1].startX * worldSize;
-            int mine = partitions[id].startX + partitions[id].prev + partitions[id].current * worldSize;
+            int mine = (partitions[id].startX + partitions[id].prev + partitions[id].current) * worldSize;
+            int his = (partitions[id].startX + partitions[id].prev + partitions[id].current - partitions[id + 1].prev) * worldSize;
 
             MPI_Irecv(*readBoard + mine, partitions[id].next * worldSize * sizeof(world), MPI_BYTE, id + 1, NEXT_PART, CPD, &requests[1]);
             MPI_Isend(*readBoard + his, partitions[id + 1].prev * worldSize * sizeof(world), MPI_BYTE, id + 1, PREV_PART, CPD, &requests[0]);
