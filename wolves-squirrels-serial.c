@@ -88,6 +88,9 @@ int main(int argc, char *argv[]) {
     int worldSize;
     world **readBoard = NULL, **writeBoard = NULL;
     position pos;
+    int g;
+    int partitionSize;
+    int numberOfGenerations;
 
     MPI_Init(&argc, &argv);
 
@@ -100,14 +103,14 @@ int main(int argc, char *argv[]) {
     readFile(argv[1], &readBoard, &writeBoard, &worldSize);
 
     if (!partitions[id].current) {
+        free(readBoard);
+        free(writeBoard);
+        free(partitions);
+
         MPI_Finalize();
 
         return 0;
     }
-
-    int g;
-    int partitionSize;
-    int numberOfGenerations;
 
     partitionSize = partitions[id].prev + partitions[id].current + partitions[id].next;
 
