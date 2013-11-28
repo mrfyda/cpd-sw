@@ -22,9 +22,13 @@ clean:
 	@rm -rf *.a *.o wolves-squirrels-serial
 
 run:
-	scp bin/wolves-squirrels-serial ist1${USER}@cluster.rnl.ist.utl.pt:/mnt/nimbus/pool/CPD/groups/15/${USER}
-	scp condor ist1${USER}@cluster.rnl.ist.utl.pt:/mnt/nimbus/pool/CPD/groups/15/${USER}
-	ssh ist1${USER}@cluster.rnl.ist.utl.pt 'bash -c "cd /mnt/nimbus/pool/CPD/groups/15/${USER}; condor_submit condor; tail -f outputs/out"'
+	scp wolves-squirrels-serial.c condor ist1${USER}@cluster.rnl.ist.utl.pt:/mnt/nimbus/pool/CPD/groups/15/${USER}
+	ssh ist1${USER}@cluster.rnl.ist.utl.pt 'bash -c "\
+		cd /mnt/nimbus/pool/CPD/groups/15/${USER}; \
+		$(CC) $(IN) -o wolves-squirrels-serial $(CFLAGS) $(LIBDIR) $< $(LIBS); \
+		rm wolves-squirrels-serial.c && \
+		condor_submit condor && \
+		tail -f outputs/out"'
 
 lrun:
 	@mpirun -np 4 ./bin/wolves-squirrels-serial tests/ex3.in 3 4 4 4
