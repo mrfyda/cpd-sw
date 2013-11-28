@@ -86,11 +86,8 @@ partition *partitions;
 
 int main(int argc, char *argv[]) {
     int worldSize;
-    int partitionSize;
     world **readBoard = NULL, **writeBoard = NULL;
-    int g;
     position pos;
-    int numberOfGenerations;
 
     MPI_Init(&argc, &argv);
 
@@ -101,16 +98,23 @@ int main(int argc, char *argv[]) {
         debug("Unexpected number of input: %d\n", argc);
 
     readFile(argv[1], &readBoard, &writeBoard, &worldSize);
+
+    if (!partitions[id].current) {
+        MPI_Finalize();
+
+        return 0;
+    }
+
+    int g;
+    int partitionSize;
+    int numberOfGenerations;
+
     partitionSize = partitions[id].prev + partitions[id].current + partitions[id].next;
 
     wolfBreedingPeriod = atoi(argv[2]);
     squirrelBreedingPeriod = atoi(argv[3]);
     wolfStarvationPeriod = atoi(argv[4]);
     numberOfGenerations = atoi(argv[5]);
-
-    /*
-    debugBoard(readBoard, worldSize);
-    */
 
     /* process each generation */
     for (g = 0; g < numberOfGenerations; g++) {
@@ -142,7 +146,7 @@ int main(int argc, char *argv[]) {
             MPI_Request requests[2];
             MPI_Status status[2];
 
-            int mine = (partitions[id].startX + partitions[id].prev) * worldSize;
+            int mine = partitions[id].prev * worldSize;
 
             MPI_Irecv(*readBoard, partitions[id].prev * worldSize * sizeof(world), MPI_BYTE, id - 1, PREV_PART, CPD, &requests[1]);
             MPI_Isend(*readBoard + mine, partitions[id - 1].next * worldSize * sizeof(world), MPI_BYTE, id - 1, NEXT_PART, CPD, &requests[0]);
@@ -153,21 +157,14 @@ int main(int argc, char *argv[]) {
             MPI_Request requests[2];
             MPI_Status status[2];
 
-            int mine = (partitions[id].startX + partitions[id].prev + partitions[id].current) * worldSize;
-            int his = (partitions[id].startX + partitions[id].prev + partitions[id].current - partitions[id + 1].prev) * worldSize;
+            int mine = (partitions[id].prev + partitions[id].current) * worldSize;
+            int his = (partitions[id].prev + partitions[id].current - partitions[id + 1].prev) * worldSize;
 
             MPI_Irecv(*readBoard + mine, partitions[id].next * worldSize * sizeof(world), MPI_BYTE, id + 1, NEXT_PART, CPD, &requests[1]);
             MPI_Isend(*readBoard + his, partitions[id + 1].prev * worldSize * sizeof(world), MPI_BYTE, id + 1, PREV_PART, CPD, &requests[0]);
 
             MPI_Waitall(2, requests, status);
         }
-
-        /*
-        debug("\n");
-        debug("Iteration %d Red\n", g + 1);
-        debugBoard(readBoard, worldSize);
-        debug("\n");
-        */
 
         /* process second sub generation */
         if (partitionSize % 2 != 0 && id % 2 != 0) {
@@ -217,7 +214,7 @@ int main(int argc, char *argv[]) {
             MPI_Request requests[2];
             MPI_Status status[2];
 
-            int mine = (partitions[id].startX + partitions[id].prev) * worldSize;
+            int mine = partitions[id].prev * worldSize;
 
             MPI_Irecv(*readBoard, partitions[id].prev * worldSize * sizeof(world), MPI_BYTE, id - 1, PREV_PART, CPD, &requests[1]);
             MPI_Isend(*readBoard + mine, partitions[id - 1].next * worldSize * sizeof(world), MPI_BYTE, id - 1, NEXT_PART, CPD, &requests[0]);
@@ -228,8 +225,8 @@ int main(int argc, char *argv[]) {
             MPI_Request requests[2];
             MPI_Status status[2];
 
-            int mine = (partitions[id].startX + partitions[id].prev + partitions[id].current) * worldSize;
-            int his = (partitions[id].startX + partitions[id].prev + partitions[id].current - partitions[id + 1].prev) * worldSize;
+            int mine = (partitions[id].prev + partitions[id].current) * worldSize;
+            int his = (partitions[id].prev + partitions[id].current - partitions[id + 1].prev) * worldSize;
 
             MPI_Irecv(*readBoard + mine, partitions[id].next * worldSize * sizeof(world), MPI_BYTE, id + 1, NEXT_PART, CPD, &requests[1]);
             MPI_Isend(*readBoard + his, partitions[id + 1].prev * worldSize * sizeof(world), MPI_BYTE, id + 1, PREV_PART, CPD, &requests[0]);
@@ -237,16 +234,9 @@ int main(int argc, char *argv[]) {
             MPI_Waitall(2, requests, status);
         }
 
-        /*
-        debug("Iteration %d Black\n", g + 1);
-        debugBoard(readBoard, worldSize);
-        */
     }
 
     printBoardListParcial(readBoard, worldSize);
-    /*
-    printBoardList(readBoard, worldSize);
-    */
 
     free(*readBoard);
     free(*writeBoard);
@@ -266,8 +256,8 @@ void readFile(const char *path, world ***readBoard, world ***writeBoard, int *wo
     if (fgets(line, 80, fr) != NULL) {
         int i, j;
         int sum = 0;
-        int firstSize = 0;
         int partitionSize = 0;
+        int division = PADDING;
         world *readSegment = NULL, *writeSegment = NULL;
 
         sscanf(line, "%d", worldSize);
@@ -275,39 +265,40 @@ void readFile(const char *path, world ***readBoard, world ***writeBoard, int *wo
         /* calculate partition size of each process
            calculate starting position considering overlapping of at most 2 lines to avoid conflicts */
         partitions = (partition *) malloc(p * sizeof(partition));
+        division = MAX(division, ceil(((float)(*worldSize) / (float)p)));
+
         for (i = 0; i < p; i++) {
-            float division = (float)(*worldSize) / (float)p;
+            if (sum < *worldSize) {
+                partitions[i].current = MIN(*worldSize - sum, division);
 
-            if (i == p - 1) {
-                partitions[i].current = *worldSize - sum;
-            } else if (division - abs(division) > 0.5) {
-                partitions[i].current = ceil(division);
-            } else {
-                partitions[i].current = floor(division);
-            }
+                if (i == 0) {
+                    partitions[i].prev = 0;
+                } else if (partitions[i].current != division) {
+                    partitions[i - 1].next = MIN(PADDING, partitions[i].current);
+                    partitions[i].prev = PADDING;
+                } else {
+                    partitions[i - 1].next = PADDING;
+                    partitions[i].prev = PADDING;
+                }
 
-            if (i == 0) {
-                firstSize = MIN(partitions[0].current, PADDING);
-
-                partitions[i].prev = 0;
-                partitions[i].next = PADDING;
-                partitions[i].startX = 0;
-            } else if (i == p - 1) {
-                partitions[i].prev = PADDING;
                 partitions[i].next = 0;
-                partitions[i].startX = sum - PADDING;
-            } else if (i == 1) {
-                partitions[i].prev = firstSize;
-                partitions[i].next = PADDING;
-                partitions[i].startX = sum - firstSize;
-            } else {
-                partitions[i].prev = PADDING;
-                partitions[i].next = PADDING;
-                partitions[i].startX = sum - PADDING;
-            }
+                partitions[i].startX = MAX(0, sum - partitions[i].prev);
 
-            sum += partitions[i].current;
+                sum += partitions[i].current;
+            } else {
+                partitions[i].prev = 0;
+                partitions[i].current = 0;
+                partitions[i].next = 0;
+                partitions[i].startX = 0;
+            }
         }
+
+        /*if (!id) {
+            for (i = 0; i < p; i++) {
+                debug("PID: %d | ITR: %d | DIV: %d | PRE: %d | CUR: %d | NEX: %d | STA: %d\n", id, i, division,
+                      partitions[i].prev, partitions[i].current, partitions[i].next, partitions[i].startX);
+            }
+        }*/
 
         partitionSize = partitions[id].prev + partitions[id].current + partitions[id].next;
 
@@ -523,24 +514,20 @@ void processSquirrel(world **oldBoard, world ***newBoard, int partitionSize, int
     possibleMoves = calculateSquirrelMoves(oldBoard, partitionSize, worldSize, pos, possiblePos);
 
     if (possibleMoves > 1) {
-        int absPosX = pos.x - partitions[id].prev;
-        int i, c = 0;
-
-        for (i = 0; i < id; i++) {
-            absPosX += partitions[i].current;
-        }
+        int c = 0;
+        int absPosX = partitions[id].startX + pos.x;
 
         c = absPosX * worldSize + pos.y;
         destPos = possiblePos[c % possibleMoves];
-        destCell = &(*newBoard)[destPos.x][destPos.y];
     } else if (possibleMoves == 1) {
         destPos = possiblePos[0];
-        destCell = &(*newBoard)[destPos.x][destPos.y];
     } else {
         return;
     }
 
+    destCell = &(*newBoard)[destPos.x][destPos.y];
     moveSquirrel(oldCell, newCell, destCell);
+
 }
 /*******************************************Squirrel Rules End*******************************************/
 /********************************************************************************************************/
@@ -648,23 +635,18 @@ void processWolf(world **oldBoard, world ***newBoard, int partitionSize, int wor
     possibleMoves = calculateWolfMoves(oldBoard, partitionSize, worldSize, pos, possiblePos);
 
     if (possibleMoves > 1) {
-        int absPosX = pos.x - partitions[id].prev;
-        int i, c = 0;
-
-        for (i = 0; i < id; i++) {
-            absPosX += partitions[i].current;
-        }
+        int c = 0;
+        int absPosX = partitions[id].startX + pos.x;
 
         c = absPosX * worldSize + pos.y;
         destPos = possiblePos[c % possibleMoves];
-        destCell = &(*newBoard)[destPos.x][destPos.y];
     } else if (possibleMoves == 1) {
         destPos = possiblePos[0];
-        destCell = &(*newBoard)[destPos.x][destPos.y];
     } else {
         return;
     }
 
+    destCell = &(*newBoard)[destPos.x][destPos.y];
     moveWolf(oldCell, newCell, destCell);
 }
 /*********************************************Wolf Rules End*********************************************/
