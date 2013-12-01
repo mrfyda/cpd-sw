@@ -66,9 +66,7 @@ typedef struct {
 } partition;
 
 void readFile(const char *path, world ***readBoard, world ***writeBoard, int *worldSize);
-void debugBoard(world **board, int partitionSize, int worldSize);
 void debug(const char *format, ...);
-void printBoardList(world **board, int worldSize);
 void printBoardListMPI(world **board, int worldSize);
 void processSquirrel(world **oldBoard, world ***newBoard, int partitionSize, int worldSize, position pos);
 void processWolf(world **oldBoard, world ***newBoard, int partitionSize, int worldSize, position pos);
@@ -297,13 +295,6 @@ void readFile(const char *path, world ***readBoard, world ***writeBoard, int *wo
             }
         }
 
-        /*if (!id) {
-            for (i = 0; i < p; i++) {
-                debug("PID: %d | ITR: %d | DIV: %d | PRE: %d | CUR: %d | NEX: %d | STA: %d\n", id, i, division,
-                      partitions[i].prev, partitions[i].current, partitions[i].next, partitions[i].startX);
-            }
-        }*/
-
         partitionSize = partitions[id].prev + partitions[id].current + partitions[id].next;
 
         /* allocate memory in one contiguous segment */
@@ -346,54 +337,16 @@ void readFile(const char *path, world ***readBoard, world ***writeBoard, int *wo
     fclose(fr);
 }
 
-void debugBoard(world **board, int partitionSize, int worldSize) {
-    if (DEBUG) {
-        int i, j;
-        debug("---------------------------------\n   ");
-        for (i = 0; i < worldSize; i++) {
-            debug("%02d|", i);
-        }
-        debug("\n");
-        for (i = 0; i < partitionSize; i++) {
-            debug("%02d: ", i);
-            for (j = 0; j < worldSize; j++) {
-                debug("%1c| ", board[i][j].type);
-            }
-            debug("\n");
-        }
-        debug("---------------------------------\n");
-    }
-}
-
-void printBoardList(world **board, int worldSize) {
-    int i, j;
-    for (i = 0; i < worldSize; i++) {
-        for (j = 0; j < worldSize; j++) {
-            if (board[i][j].type != EMPTY) {
-                printf("%d %d %c\n", i, j, board[i][j].type);
-                fflush(stdout);
-            }
-        }
-    }
-}
-
 void printBoardListMPI(world **board, int worldSize) {
 
     if (id == 0) {
         int i, j, pi;
-        int lower = partitions[0].startX + partitions[0].prev;
-        int upper = partitions[0].current + partitions[0].prev + partitions[0].startX;
-        int maxBufferBoard = PADDING;
-        world *bufferBoard;
-        
-        maxBufferBoard = MAX(maxBufferBoard, ceil(((float)(worldSize) / (float)p)));
-        bufferBoard = (world *) malloc(maxBufferBoard * (worldSize * sizeof(world)));
+
         /*Print his own part*/
-        for (i = lower; i < upper; i++) {
+        for (i = 0; i < partitions[0].current; i++) {
             for (j = 0; j < worldSize; j++) {
-                if (board[i - partitions[0].startX][j].type != EMPTY) {
-                    printf("%d %d %c\n", i, j, board[i - partitions[0].startX][j].type);
-                    fflush(stdout);
+                if (board[i][j].type != EMPTY) {
+                    printf("%d %d %c\n", i, j, board[i][j].type);
                 }
             }
         }
@@ -401,24 +354,28 @@ void printBoardListMPI(world **board, int worldSize) {
         /*Receive and print the other parts*/
         for (pi = 1; pi < p; pi++) {
             if (partitions[pi].current) {
+                world *bufferBoard;
                 MPI_Status status;
+                int lower = partitions[pi].startX + partitions[pi].prev;
+                int upper = lower + partitions[pi].current;
+
+                bufferBoard = (world *) malloc(partitions[pi].current * (worldSize * sizeof(world)));
+
                 MPI_Recv(bufferBoard, partitions[pi].current * worldSize * sizeof(world), MPI_BYTE, pi, CURRENT_PART, CPD, &status);
 
-                lower = partitions[pi].startX + partitions[pi].prev;
-                upper = partitions[pi].current + partitions[pi].prev + partitions[pi].startX;
                 for (i = lower; i < upper; i++) {
                     for (j = 0; j < worldSize; j++) {
-                        if (bufferBoard[(i - (partitions[pi].startX + partitions[pi].prev)) * worldSize + j].type != EMPTY) {
-                            printf("%d %d %c\n", i, j, bufferBoard[(i - (partitions[pi].startX + partitions[pi].prev)) * worldSize + j].type);
-                            fflush(stdout);
+                        char symbol = bufferBoard[(i - lower) * worldSize + j].type;
+                        if (symbol != EMPTY) {
+                            printf("%d %d %c\n", i, j, symbol);
                         }
                     }
                 }
+
+                free(bufferBoard);
             }
 
         }
-
-        free(bufferBoard);
     } else {
         MPI_Send(*board + (partitions[id].prev * worldSize), partitions[id].current * worldSize * sizeof(world), MPI_BYTE, 0, CURRENT_PART, CPD);
     }
