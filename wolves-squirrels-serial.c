@@ -90,11 +90,15 @@ int main(int argc, char *argv[]) {
     int g;
     int partitionSize;
     int numberOfGenerations;
+    double start, end;
 
     MPI_Init(&argc, &argv);
 
     MPI_Comm_rank(MPI_COMM_WORLD, &id);
     MPI_Comm_size(MPI_COMM_WORLD, &p);
+
+    MPI_Barrier(MPI_COMM_WORLD); /* IMPORTANT */
+    start = MPI_Wtime();
 
     if (argc != 6)
         debug("Unexpected number of input: %d\n", argc);
@@ -238,7 +242,14 @@ int main(int argc, char *argv[]) {
 
     }
 
+    MPI_Barrier(MPI_COMM_WORLD); /* IMPORTANT */
+    end = MPI_Wtime();
+
     printBoardListMPI(readBoard, worldSize);
+
+    if (id == 0) { /* use time on master node */
+        printf("TIME: %.1f\n", end-start);
+    }
 
     free(*readBoard);
     free(*writeBoard);

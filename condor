@@ -1,9 +1,9 @@
 universe = parallel
 executable = /usr/sbin/ompiwrapper.sh
-arguments = wolves-squirrels-serial tests/ex3.in 3 4 4 4
-log = outputs/log
-output = outputs/out
-error = outputs/err
-machine_count = 4
+arguments = wolves-squirrels-serial tests/world_10.in 20 50 30 1000000
+log = outputs/log_p1_w10
+output = outputs/out_p1_w10
+error = outputs/err_p1_w10
+machine_count = 1
 queue
 
