@@ -97,13 +97,13 @@ int main(int argc, char *argv[]) {
     MPI_Comm_rank(MPI_COMM_WORLD, &id);
     MPI_Comm_size(MPI_COMM_WORLD, &p);
 
-    MPI_Barrier(MPI_COMM_WORLD); /* IMPORTANT */
-    start = MPI_Wtime();
-
     if (argc != 6)
         debug("Unexpected number of input: %d\n", argc);
 
     readFile(argv[1], &readBoard, &writeBoard, &worldSize);
+
+    MPI_Barrier(MPI_COMM_WORLD); /* IMPORTANT */
+    start = MPI_Wtime();
 
     if (!partitions[id].current) {
         free(readBoard);
@@ -242,13 +242,13 @@ int main(int argc, char *argv[]) {
 
     }
 
+    printBoardListMPI(readBoard, worldSize);
+
     MPI_Barrier(MPI_COMM_WORLD); /* IMPORTANT */
     end = MPI_Wtime();
 
-    printBoardListMPI(readBoard, worldSize);
-
     if (id == 0) { /* use time on master node */
-        printf("TIME: %.1f\n", end-start);
+        printf("TIME: %.2f\n", end-start);
     }
 
     free(*readBoard);
