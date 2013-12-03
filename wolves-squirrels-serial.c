@@ -102,8 +102,9 @@ int main(int argc, char *argv[]) {
 
     readFile(argv[1], &readBoard, &writeBoard, &worldSize);
 
-    MPI_Barrier(MPI_COMM_WORLD); /* IMPORTANT */
-    start = MPI_Wtime();
+    if (id == 0) { /* get time on master node */
+        start = MPI_Wtime();
+    }
 
     if (!partitions[id].current) {
         free(readBoard);
@@ -244,10 +245,8 @@ int main(int argc, char *argv[]) {
 
     printBoardListMPI(readBoard, worldSize);
 
-    MPI_Barrier(MPI_COMM_WORLD); /* IMPORTANT */
-    end = MPI_Wtime();
-
-    if (id == 0) { /* use time on master node */
+    if (id == 0) { /* get time on master node */
+        end = MPI_Wtime();
         printf("TIME: %.2f\n", end-start);
     }
 
